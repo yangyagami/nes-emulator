@@ -1,0 +1,5 @@
+target("easy_test")
+add_deps("nes")
+set_kind("binary")
+add_files("easy_test.cc")
+add_links("raylib")
