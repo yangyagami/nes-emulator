@@ -13,13 +13,17 @@ namespace nes {
 Cpu::Cpu(Bus &bus) : bus_(bus) {}
 
 void Cpu::Tick() {
+  nes_assert(cycles == 0, std::format("Invalid cycles: {}", cycles));
+
   // Fetch opcode
   uint8_t opcode = bus_.CpuRead8Bit(PC);
 
   nes_assert(kOpcodes.find(opcode) != kOpcodes.end(),
-             std::format("Invalid opcode: {:#02x}", opcode));
+             std::format("Invalid opcode: 0x{:02x}", opcode));
 
   Opcode opcode_obj = kOpcodes.find(opcode)->second;
+
+  cycles = opcode_obj.cycles;
 
   opcode_obj.func(opcode_obj.addressing_mode);
 
@@ -46,8 +50,30 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
       result = bus_.CpuRead16Bit(PC + 1);
       break;
     }
+    case kAbsoluteX: {
+      result = AbsoluteAdd(X);
+      break;
+    }
+    case kAbsoluteY: {
+      result = AbsoluteAdd(Y);
+      break;
+    }
+    case kZeroPage: {
+      uint16_t addr = (PC + 1);
+      result = bus_.CpuRead8Bit(addr);
+      break;
+    }
+    case kZeroPageX: {
+      uint16_t addr = (PC + 1);
+      uint8_t tmp = bus_.CpuRead8Bit(addr);
+      tmp += X;
+      result = tmp;
+      break;
+    }
     default:
-      assert(false);
+      std::string msg = std::format("No such mode: {}",
+                                    static_cast<int>(addressing_mode));
+      nes_assert(false, msg);
       break;
   }
 
@@ -57,9 +83,9 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
 void Cpu::UpdateZeroAndNegativeFlag(uint8_t v) {
   int8_t result = v;
   if (result == 0) {
-    P.ZERO = 0;
-  } else {
     P.ZERO = 1;
+  } else {
+    P.ZERO = 0;
   }
 
   if (result < 0) {
@@ -71,15 +97,44 @@ void Cpu::UpdateZeroAndNegativeFlag(uint8_t v) {
 
 // Instructions
 void Cpu::LDA(AddressingMode addressing) {
-  uint16_t new_address = GetAddress(addressing);
-  A = bus_.CpuRead8Bit(new_address);
+  LoadToReg(A, addressing);
+}
 
-  UpdateZeroAndNegativeFlag(A);
+void Cpu::LDX(AddressingMode addressing) {
+  LoadToReg(X, addressing);
 }
 
 void Cpu::STA(AddressingMode addressing) {
   uint16_t new_address = GetAddress(addressing);
   bus_.CpuWrite8Bit(new_address, A);
+}
+
+bool Cpu::IsCrossPage(uint16_t old_address, uint16_t new_address) {
+  const int kPageSize = 256;
+  if (old_address / kPageSize == new_address / kPageSize) {
+    return false;
+  }
+  return true;
+}
+
+uint16_t Cpu::AbsoluteAdd(uint8_t reg) {
+  uint16_t result = 0;
+
+  uint16_t before = bus_.CpuRead16Bit(PC + 1);
+  result = before + reg;
+
+  if (IsCrossPage(before, result)) {
+    cycles++;
+  }
+
+  return result;
+}
+
+void Cpu::LoadToReg(uint8_t &reg, AddressingMode addressing) {
+  uint16_t new_address = GetAddress(addressing);
+  reg = bus_.CpuRead8Bit(new_address);
+
+  UpdateZeroAndNegativeFlag(reg);
 }
 
 }  // namespace nes

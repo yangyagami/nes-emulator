@@ -10,6 +10,12 @@ namespace nes {
 
 class Bus;
 
+/*
+  Reference:
+    Overview: https://www.nesdev.org/wiki/CPU
+    Opcodes: https://www.nesdev.org/obelisk-6502-guide/reference.html
+    Addressing: https://skilldrick.github.io/easy6502/#addressing
+*/
 struct Cpu {
   enum AddressingMode {
     kAbsolute = 0,
@@ -54,6 +60,8 @@ struct Cpu {
     uint8_t raw;
   } P;
 
+  uint8_t cycles;
+
   Cpu(Bus &bus);
 
   void Tick();
@@ -64,8 +72,14 @@ struct Cpu {
 
   // Instructions
   void LDA(AddressingMode addressing);
-
+  void LDX(AddressingMode addressing);
   void STA(AddressingMode addressing);
+
+ private:
+  // Some helper function
+  bool IsCrossPage(uint16_t old_address, uint16_t new_address);
+  uint16_t AbsoluteAdd(uint8_t reg);  // Absolute addressing with register.
+  void LoadToReg(uint8_t &reg, AddressingMode addressing);  // Used for LDA, LDX...
 
  private:
   Bus &bus_;
@@ -78,6 +92,15 @@ struct Cpu {
   const std::map<uint8_t, Opcode> kOpcodes = {
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
+    NES_OPCODE("LDA", kZeroPage,
+               0xA5, 2, 3, &Cpu::LDA),
+    NES_OPCODE("LDA", kZeroPageX,
+               0xB5, 2, 4, &Cpu::LDA),
+    NES_OPCODE("LDA", kAbsolute,
+               0xAD, 3, 4, &Cpu::LDA),
+
+    NES_OPCODE("LDX", kImmediate,
+               0xA2, 2, 2, &Cpu::LDX),
 
     NES_OPCODE("STA", kAbsolute,
                0x8D, 3, 4, &Cpu::STA),
