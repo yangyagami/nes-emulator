@@ -36,6 +36,8 @@ void Cpu::Reset() {
   P.raw = 0;
   P.B = 1;
   P.UNUSED = 1;
+
+  cycles = 0;
 }
 
 uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
@@ -105,8 +107,11 @@ void Cpu::LDX(AddressingMode addressing) {
 }
 
 void Cpu::STA(AddressingMode addressing) {
-  uint16_t new_address = GetAddress(addressing);
-  bus_.CpuWrite8Bit(new_address, A);
+  StoreToMem(A, addressing);
+}
+
+void Cpu::STX(AddressingMode addressing) {
+  StoreToMem(X, addressing);
 }
 
 bool Cpu::IsCrossPage(uint16_t old_address, uint16_t new_address) {
@@ -135,6 +140,11 @@ void Cpu::LoadToReg(uint8_t &reg, AddressingMode addressing) {
   reg = bus_.CpuRead8Bit(new_address);
 
   UpdateZeroAndNegativeFlag(reg);
+}
+
+void Cpu::StoreToMem(uint8_t reg, AddressingMode addressing) {
+  uint16_t new_address = GetAddress(addressing);
+  bus_.CpuWrite8Bit(new_address, reg);
 }
 
 }  // namespace nes

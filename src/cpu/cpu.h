@@ -74,12 +74,14 @@ struct Cpu {
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
   void STA(AddressingMode addressing);
+  void STX(AddressingMode addressing);
 
  private:
   // Some helper function
   bool IsCrossPage(uint16_t old_address, uint16_t new_address);
   uint16_t AbsoluteAdd(uint8_t reg);  // Absolute addressing with register.
   void LoadToReg(uint8_t &reg, AddressingMode addressing);  // Used for LDA, LDX...
+  void StoreToMem(uint8_t reg, AddressingMode addressing);
 
  private:
   Bus &bus_;
@@ -98,12 +100,17 @@ struct Cpu {
                0xB5, 2, 4, &Cpu::LDA),
     NES_OPCODE("LDA", kAbsolute,
                0xAD, 3, 4, &Cpu::LDA),
+    NES_OPCODE("LDA", kAbsoluteX,
+               0xBD, 3, 4, &Cpu::LDA),
 
     NES_OPCODE("LDX", kImmediate,
                0xA2, 2, 2, &Cpu::LDX),
 
     NES_OPCODE("STA", kAbsolute,
                0x8D, 3, 4, &Cpu::STA),
+
+    NES_OPCODE("STX", kAbsolute,
+               0x8E, 3, 4, &Cpu::STX),
   };
 
 #undef NES_OPCODE

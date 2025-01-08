@@ -14,41 +14,6 @@ void SafeTick(nes::Cpu &cpu) {
   while (--cpu.cycles > 0);
 }
 
-TEST(LDA, LDA_AbsoluteAddressing) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
-
-  /*
-    LDA #$02
-    STA $0003
-    LDA #$05
-    LDA $0003
-  */
-  uint8_t tmp[] = {
-    0xa9, 0x02,
-    0x8d, 0x03, 0x00,
-    0xa9, 0x05,
-    0xad, 0x03, 0x00,
-  };
-
-  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
-    memory[0x0600 + i] = tmp[i];
-  }
-
-  nes::Bus bus(memory);
-
-  nes::Cpu cpu(bus);
-  cpu.Reset();
-  cpu.PC = 0x0600;
-
-  SafeTick(cpu);
-  SafeTick(cpu);
-  SafeTick(cpu);
-  SafeTick(cpu);
-
-  EXPECT_EQ(cpu.A, 2);
-  EXPECT_EQ(cpu.P.raw, 0x30);
-}
-
 TEST(LDA, LDA_Immediately) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 
@@ -195,6 +160,92 @@ TEST(LDA, LDA_ZeroPageX) {
   SafeTick(cpu);
   EXPECT_EQ(cpu.A, 0x5);
   EXPECT_EQ(cpu.P.raw, 0x30);
+}
+
+TEST(LDA, LDA_AbsoluteAddressing) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA #$02
+    STA $0003
+    LDA #$05
+    LDA $0003
+  */
+  uint8_t tmp[] = {
+    0xa9, 0x02,
+    0x8d, 0x03, 0x00,
+    0xa9, 0x05,
+    0xad, 0x03, 0x00,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+
+  EXPECT_EQ(cpu.A, 2);
+  EXPECT_EQ(cpu.P.raw, 0x30);
+}
+
+TEST(LDA, LDA_AbsoluteX) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA $0000, X
+    LDX #$ff
+    STX $00ff
+    LDA $00ff, X
+    LDA $0000, X
+  */
+  uint8_t tmp[] = {
+    0xbd, 0x00, 0x00,
+    0xa2, 0xff,
+    0x8e, 0xff, 0x00,
+    0xbd, 0xff, 0x00,
+    0xbd, 0x00, 0x00,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.X, 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0xff], 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  cpu.Tick();
+  EXPECT_EQ(cpu.cycles, 5);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+  while(--cpu.cycles > 0);
+
+  cpu.Tick();
+  EXPECT_EQ(cpu.cycles, 4);
+  EXPECT_EQ(cpu.A, 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
 int main(int argc, char *argv[]) {
