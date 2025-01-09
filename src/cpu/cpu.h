@@ -125,6 +125,14 @@ struct Cpu {
 
     NES_OPCODE("LDY", kImmediate,
                0xA0, 2, 2, &Cpu::LDY),
+    NES_OPCODE("LDY", kZeroPage,
+               0xA4, 2, 3, &Cpu::LDY),
+    NES_OPCODE("LDY", kZeroPageX,
+               0xB4, 2, 4, &Cpu::LDY),
+    NES_OPCODE("LDY", kAbsolute,
+               0xAC, 3, 4, &Cpu::LDY),
+    NES_OPCODE("LDY", kAbsoluteX,
+               0xBC, 3, 4, &Cpu::LDY),
 
     NES_OPCODE("STA", kZeroPage,
                0x85, 2, 3, &Cpu::STA),
