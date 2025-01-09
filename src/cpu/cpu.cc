@@ -72,6 +72,27 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
       result = tmp;
       break;
     }
+    case kIndexedIndirect: {
+      uint16_t addr = (PC + 1);
+      uint8_t tmp = bus_.CpuRead8Bit(addr);
+
+      tmp += X;
+
+      result = bus_.CpuRead16Bit(tmp);
+      break;
+    }
+    case kIndirectIndexed: {
+      uint16_t addr = (PC + 1);
+      uint8_t tmp = bus_.CpuRead8Bit(addr);
+      uint16_t before = bus_.CpuRead16Bit(tmp);
+
+      result = before + Y;
+
+      if (IsCrossPage(before, result)) {
+        cycles++;
+      }
+      break;
+    }
     default:
       std::string msg = std::format("No such mode: {}",
                                     static_cast<int>(addressing_mode));
@@ -106,12 +127,20 @@ void Cpu::LDX(AddressingMode addressing) {
   LoadToReg(X, addressing);
 }
 
+void Cpu::LDY(AddressingMode addressing) {
+  LoadToReg(Y, addressing);
+}
+
 void Cpu::STA(AddressingMode addressing) {
   StoreToMem(A, addressing);
 }
 
 void Cpu::STX(AddressingMode addressing) {
   StoreToMem(X, addressing);
+}
+
+void Cpu::STY(AddressingMode addressing) {
+  StoreToMem(Y, addressing);
 }
 
 bool Cpu::IsCrossPage(uint16_t old_address, uint16_t new_address) {

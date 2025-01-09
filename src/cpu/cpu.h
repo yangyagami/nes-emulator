@@ -73,8 +73,10 @@ struct Cpu {
   // Instructions
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
+  void LDY(AddressingMode addressing);
   void STA(AddressingMode addressing);
   void STX(AddressingMode addressing);
+  void STY(AddressingMode addressing);
 
  private:
   // Some helper function
@@ -102,15 +104,29 @@ struct Cpu {
                0xAD, 3, 4, &Cpu::LDA),
     NES_OPCODE("LDA", kAbsoluteX,
                0xBD, 3, 4, &Cpu::LDA),
+    NES_OPCODE("LDA", kAbsoluteY,
+               0xB9, 3, 4, &Cpu::LDA),
+    NES_OPCODE("LDA", kIndexedIndirect,
+               0xA1, 2, 6, &Cpu::LDA),
+    NES_OPCODE("LDA", kIndirectIndexed,
+               0xB1, 2, 5, &Cpu::LDA),
 
     NES_OPCODE("LDX", kImmediate,
                0xA2, 2, 2, &Cpu::LDX),
 
+    NES_OPCODE("LDY", kImmediate,
+               0xA0, 2, 2, &Cpu::LDY),
+
+    NES_OPCODE("STA", kZeroPage,
+               0x85, 2, 3, &Cpu::STA),
     NES_OPCODE("STA", kAbsolute,
                0x8D, 3, 4, &Cpu::STA),
 
     NES_OPCODE("STX", kAbsolute,
                0x8E, 3, 4, &Cpu::STX),
+
+    NES_OPCODE("STY", kAbsolute,
+               0x8C, 3, 4, &Cpu::STY),
   };
 
 #undef NES_OPCODE

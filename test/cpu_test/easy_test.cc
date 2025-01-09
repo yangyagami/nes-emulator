@@ -248,6 +248,191 @@ TEST(LDA, LDA_AbsoluteX) {
   EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
+TEST(LDA, LDA_AbsoluteY) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA $0000, Y
+    LDY #$ff
+    STY $00ff
+    LDA $00ff, Y
+    LDA $0000, Y
+  */
+  uint8_t tmp[] = {
+    0xb9, 0x00, 0x00,
+    0xa0, 0xff,
+    0x8C, 0xff, 0x00,
+    0xb9, 0xff, 0x00,
+    0xb9, 0x00, 0x00,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.Y, 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0xff], 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  cpu.Tick();
+  EXPECT_EQ(cpu.cycles, 5);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+  while(--cpu.cycles > 0);
+
+  cpu.Tick();
+  EXPECT_EQ(cpu.cycles, 4);
+  EXPECT_EQ(cpu.A, 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
+TEST(LDA, LDA_IndirectX) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDX #$01
+    LDA #$05
+    STA $01
+    LDA #$07
+    STA $02
+    LDY #$0a
+    STY $0705
+    LDA ($00,X)
+  */
+  uint8_t tmp[] = {
+    0xa2, 0x01,
+    0xa9, 0x05,
+    0x85, 0x01,
+    0xa9, 0x07,
+    0x85, 0x02,
+    0xa0, 0x0a,
+    0x8c, 0x05, 0x07,
+    0xa1, 0x00
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.X, 0x01);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x05);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x01], 0x05);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x07);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x02], 0x07);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.Y, 0x0a);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x0705], 0x0a);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x0a);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+}
+
+TEST(LDA, LDA_IndirectY) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDY #$01
+    LDA #$03
+    STA $01
+    LDA #$07
+    STA $02
+    LDX #$0a
+    STX $0704
+    LDA ($01),Y
+  */
+  uint8_t tmp[] = {
+    0xa0, 0x01,
+    0xa9, 0x03,
+    0x85, 0x01,
+    0xa9, 0x07,
+    0x85, 0x02,
+    0xa2, 0x0a,
+    0x8e, 0x04, 0x07,
+    0xb1, 0x01
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.Y, 0x1);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x3);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x01], 0x3);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x7);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x02], 0x7);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.X, 0x0a);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x0704], 0x0a);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x0a);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+}
+
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
