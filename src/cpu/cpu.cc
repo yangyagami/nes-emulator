@@ -61,15 +61,15 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
       break;
     }
     case kZeroPage: {
-      uint16_t addr = (PC + 1);
-      result = bus_.CpuRead8Bit(addr);
+      result = ZeroPageAdd(0);
       break;
     }
     case kZeroPageX: {
-      uint16_t addr = (PC + 1);
-      uint8_t tmp = bus_.CpuRead8Bit(addr);
-      tmp += X;
-      result = tmp;
+      result = ZeroPageAdd(X);
+      break;
+    }
+    case kZeroPageY: {
+      result = ZeroPageAdd(Y);
       break;
     }
     case kIndexedIndirect: {
@@ -160,6 +160,14 @@ uint16_t Cpu::AbsoluteAdd(uint8_t reg) {
   if (IsCrossPage(before, result)) {
     cycles++;
   }
+
+  return result;
+}
+
+uint16_t Cpu::ZeroPageAdd(uint8_t reg) {
+  uint16_t addr = (PC + 1);
+  uint8_t result = bus_.CpuRead8Bit(addr);
+  result += reg;
 
   return result;
 }

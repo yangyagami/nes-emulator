@@ -82,6 +82,7 @@ struct Cpu {
   // Some helper function
   bool IsCrossPage(uint16_t old_address, uint16_t new_address);
   uint16_t AbsoluteAdd(uint8_t reg);  // Absolute addressing with register.
+  uint16_t ZeroPageAdd(uint8_t reg);  // ZeroPage addressing with register.
   void LoadToReg(uint8_t &reg, AddressingMode addressing);  // Used for LDA, LDX...
   void StoreToMem(uint8_t reg, AddressingMode addressing);
 
@@ -113,6 +114,14 @@ struct Cpu {
 
     NES_OPCODE("LDX", kImmediate,
                0xA2, 2, 2, &Cpu::LDX),
+    NES_OPCODE("LDX", kZeroPage,
+               0xA6, 2, 3, &Cpu::LDX),
+    NES_OPCODE("LDX", kZeroPageY,
+               0xB6, 2, 4, &Cpu::LDX),
+    NES_OPCODE("LDX", kAbsolute,
+               0xAE, 3, 4, &Cpu::LDX),
+    NES_OPCODE("LDX", kAbsoluteY,
+               0xBE, 3, 4, &Cpu::LDX),
 
     NES_OPCODE("LDY", kImmediate,
                0xA0, 2, 2, &Cpu::LDY),
