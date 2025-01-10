@@ -78,6 +78,7 @@ struct Cpu {
   void STX(AddressingMode addressing);
   void STY(AddressingMode addressing);
   void TAX(AddressingMode addressing);
+  void TAY(AddressingMode addressing);
 
  private:
   // Some helper function
@@ -168,6 +169,8 @@ struct Cpu {
 
     NES_OPCODE("TAX", kImplicit,
                0xAA, 1, 2, &Cpu::TAX),
+    NES_OPCODE("TAY", kImplicit,
+               0xA8, 1, 2, &Cpu::TAY),
   };
 
 #undef NES_OPCODE

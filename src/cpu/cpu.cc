@@ -149,6 +149,12 @@ void Cpu::TAX(AddressingMode addressing) {
   Transfer(A, X);
 }
 
+void Cpu::TAY(AddressingMode addressing) {
+  (void) addressing;  // Because we was implied
+
+  Transfer(A, Y);
+}
+
 bool Cpu::IsCrossPage(uint16_t old_address, uint16_t new_address) {
   const int kPageSize = 256;
   if (old_address / kPageSize == new_address / kPageSize) {

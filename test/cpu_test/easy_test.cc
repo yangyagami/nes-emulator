@@ -953,6 +953,59 @@ TEST(Transfer, TAX) {
   EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
+TEST(Transfer, TAY) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA #$32
+    TAY
+
+    LDA #$0
+    TAY
+
+    LDA #$ff
+    TAY
+  */
+  uint8_t tmp[] = {
+    0xa9, 0x32,
+    0xa8,
+
+    0xa9, 0x00,
+    0xa8,
+
+    0xa9, 0xff,
+    0xa8
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x32);
+  EXPECT_EQ(cpu.A, cpu.Y);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x00);
+  EXPECT_EQ(cpu.A, cpu.Y);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xff);
+  EXPECT_EQ(cpu.A, cpu.Y);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
 
 
 int main(int argc, char *argv[]) {
