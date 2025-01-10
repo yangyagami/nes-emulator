@@ -156,6 +156,10 @@ struct Cpu {
     NES_OPCODE("STX", kAbsolute,
                0x8E, 3, 4, &Cpu::STX),
 
+    NES_OPCODE("STY", kZeroPage,
+               0x84, 2, 3, &Cpu::STY),
+    NES_OPCODE("STY", kZeroPageX,
+               0x94, 2, 4, &Cpu::STY),
     NES_OPCODE("STY", kAbsolute,
                0x8C, 3, 4, &Cpu::STY),
   };

@@ -848,6 +848,59 @@ TEST(STX, STX) {
   EXPECT_EQ(cpu.P.raw, 0b00110000);
 }
 
+TEST(STY, STY) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDY #$aa
+    STY $ff    ;; ZeroPage
+    ;; Memory[$ff] = $aa
+
+    LDX #$1
+    STY $ff, X ;; ZeroPageX
+    ;; Memory[$00] = $aa
+
+    STY $0100  ;; Absolute
+    ;; Memory[$0100] = $aa
+  */
+  uint8_t tmp[] = {
+    0xa0, 0xaa,
+    0x84, 0xff,
+
+    0xa2, 0x01,
+    0x94, 0xff,
+
+    0x8c, 0x00, 0x01,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.Y, 0xaa);
+  EXPECT_EQ(memory[0xff], 0xaa);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.X, 0x1);
+  EXPECT_EQ(memory[0x00], 0xaa);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x0100], 0xaa);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+}
+
+
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
