@@ -143,6 +143,12 @@ void Cpu::STY(AddressingMode addressing) {
   StoreToMem(Y, addressing);
 }
 
+void Cpu::TAX(AddressingMode addressing) {
+  (void) addressing;  // Because we was implied
+
+  Transfer(A, X);
+}
+
 bool Cpu::IsCrossPage(uint16_t old_address, uint16_t new_address) {
   const int kPageSize = 256;
   if (old_address / kPageSize == new_address / kPageSize) {
@@ -182,6 +188,14 @@ void Cpu::LoadToReg(uint8_t &reg, AddressingMode addressing) {
 void Cpu::StoreToMem(uint8_t reg, AddressingMode addressing) {
   uint16_t new_address = GetAddress(addressing);
   bus_.CpuWrite8Bit(new_address, reg);
+}
+
+void Cpu::Transfer(uint8_t from, uint8_t &to, bool p) {
+  to = from;
+
+  if (p) {
+    UpdateZeroAndNegativeFlag(to);
+  }
 }
 
 }  // namespace nes

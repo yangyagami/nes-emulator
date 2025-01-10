@@ -77,6 +77,7 @@ struct Cpu {
   void STA(AddressingMode addressing);
   void STX(AddressingMode addressing);
   void STY(AddressingMode addressing);
+  void TAX(AddressingMode addressing);
 
  private:
   // Some helper function
@@ -84,7 +85,8 @@ struct Cpu {
   uint16_t AbsoluteAdd(uint8_t reg);  // Absolute addressing with register.
   uint16_t ZeroPageAdd(uint8_t reg);  // ZeroPage addressing with register.
   void LoadToReg(uint8_t &reg, AddressingMode addressing);  // Used for LDA, LDX...
-  void StoreToMem(uint8_t reg, AddressingMode addressing);
+  void StoreToMem(uint8_t reg, AddressingMode addressing);  // Used for STA, STX...
+  void Transfer(uint8_t from, uint8_t &to, bool p = true);  // Used for tax, tay..., p means whether update status register.
 
  private:
   Bus &bus_;
@@ -162,6 +164,10 @@ struct Cpu {
                0x94, 2, 4, &Cpu::STY),
     NES_OPCODE("STY", kAbsolute,
                0x8C, 3, 4, &Cpu::STY),
+
+
+    NES_OPCODE("TAX", kImplicit,
+               0xAA, 1, 2, &Cpu::TAX),
   };
 
 #undef NES_OPCODE
