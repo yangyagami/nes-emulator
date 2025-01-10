@@ -136,8 +136,18 @@ struct Cpu {
 
     NES_OPCODE("STA", kZeroPage,
                0x85, 2, 3, &Cpu::STA),
+    NES_OPCODE("STA", kZeroPageX,
+               0x95, 2, 4, &Cpu::STA),
     NES_OPCODE("STA", kAbsolute,
                0x8D, 3, 4, &Cpu::STA),
+    NES_OPCODE("STA", kAbsoluteX,
+               0x9D, 3, 5, &Cpu::STA),
+    NES_OPCODE("STA", kAbsoluteY,
+               0x99, 3, 5, &Cpu::STA),
+    NES_OPCODE("STA", kIndexedIndirect,
+               0x81, 2, 6, &Cpu::STA),
+    NES_OPCODE("STA", kIndirectIndexed,
+               0x91, 2, 6, &Cpu::STA),
 
     NES_OPCODE("STX", kAbsolute,
                0x8E, 3, 4, &Cpu::STX),

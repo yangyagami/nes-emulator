@@ -700,6 +700,102 @@ TEST(LDY, LDY) {
   EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
+TEST(STA, STA) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA #$14
+    STA $00       ;; ZeroPage
+    LDX #$1
+    STA $00, X    ;; ZeroPageX
+    ;; Memory[$00] = $14, Memory[$01] = $14
+
+    STA $3232     ;; Absolute
+    ;; Memory[$3232] = $14
+
+    STA $3232, X  ;; AbsoluteX
+    ;; Memory[$3233] = $14
+
+    LDY #$32
+    STA $3232, Y  ;; AbsoluteY
+    ;; Memory[$3264] = $14
+
+    LDA #$20
+    STA ($00, X)  ;; IndexedIndirect
+    ;; Memory[$0014] = $20
+
+    LDA #$35
+    STA ($00), Y  ;; IndirectIndexed
+    ;; Memory[$1446] = $35
+  */
+  uint8_t tmp[] = {
+    0xa9, 0x14,
+    0x85, 0x00,
+    0xa2, 0x01,
+    0x95, 0x00,
+    0x8d, 0x32, 0x32,
+    0x9d, 0x32, 0x32,
+    0xa0, 0x32,
+    0x99, 0x32, 0x32,
+    0xa9, 0x20,
+    0x81, 0x00,
+    0xa9, 0x35,
+    0x91, 0x00
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x14);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x00], 0x14);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.X, 0x01);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x01], 0x14);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x3232], 0x14);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x3233], 0x14);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.Y, 0x32);
+  EXPECT_EQ(memory[0x3264], 0x14);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x20);
+  EXPECT_EQ(memory[0x0014], 0x20);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x35);
+  EXPECT_EQ(memory[0x1446], 0x35);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+}
+
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
