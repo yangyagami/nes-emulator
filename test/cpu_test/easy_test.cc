@@ -700,6 +700,44 @@ TEST(LDY, LDY) {
   EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
+TEST(PHA, PHA) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA #$33
+    PHA
+    PHA
+    PHA
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x33,
+    0x48,
+    0x48,
+    0x48,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x33);
+  EXPECT_EQ(memory[0x1ff], 0x33);
+  EXPECT_EQ(memory[0x1fe], 0x33);
+  EXPECT_EQ(memory[0x1fd], 0x33);
+  EXPECT_EQ(cpu.SP, 0xfc);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+}
+
 TEST(STA, STA) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 
