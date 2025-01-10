@@ -149,6 +149,10 @@ struct Cpu {
     NES_OPCODE("STA", kIndirectIndexed,
                0x91, 2, 6, &Cpu::STA),
 
+    NES_OPCODE("STX", kZeroPage,
+               0x86, 2, 3, &Cpu::STX),
+    NES_OPCODE("STX", kZeroPageY,
+               0x96, 2, 4, &Cpu::STX),
     NES_OPCODE("STX", kAbsolute,
                0x8E, 3, 4, &Cpu::STX),
 
