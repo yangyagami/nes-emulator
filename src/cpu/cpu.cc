@@ -136,6 +136,11 @@ void Cpu::PHA(AddressingMode addressing) {
   bus_.CpuWrite8Bit(0x100 + (SP--), A);
 }
 
+void Cpu::PHP(AddressingMode addressing) {
+  (void) addressing;  // Not used
+  bus_.CpuWrite8Bit(0x100 + (SP--), P.raw);
+}
+
 void Cpu::STA(AddressingMode addressing) {
   StoreToMem(A, addressing);
 }

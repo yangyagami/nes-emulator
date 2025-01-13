@@ -76,6 +76,7 @@ struct Cpu {
   void LDY(AddressingMode addressing);
 
   void PHA(AddressingMode addressing);
+  void PHP(AddressingMode addressing);
 
   void STA(AddressingMode addressing);
   void STX(AddressingMode addressing);
@@ -147,6 +148,8 @@ struct Cpu {
 
     NES_OPCODE("PHA", kImplicit,
                0x48, 1, 3, &Cpu::PHA),
+    NES_OPCODE("PHP", kImplicit,
+               0x08, 1, 3, &Cpu::PHP),
 
     NES_OPCODE("STA", kZeroPage,
                0x85, 2, 3, &Cpu::STA),
@@ -176,7 +179,6 @@ struct Cpu {
                0x94, 2, 4, &Cpu::STY),
     NES_OPCODE("STY", kAbsolute,
                0x8C, 3, 4, &Cpu::STY),
-
 
     NES_OPCODE("TAX", kImplicit,
                0xAA, 1, 2, &Cpu::TAX),
