@@ -160,6 +160,18 @@ void Cpu::TAY(AddressingMode addressing) {
   Transfer(A, Y);
 }
 
+void Cpu::TSX(AddressingMode addressing) {
+  (void) addressing;  // Because we was implied
+
+  Transfer(SP, X);
+}
+
+void Cpu::TXA(AddressingMode addressing) {
+  (void) addressing;  // Because we was implied
+
+  Transfer(X, A);
+}
+
 bool Cpu::IsCrossPage(uint16_t old_address, uint16_t new_address) {
   const int kPageSize = 256;
   if (old_address / kPageSize == new_address / kPageSize) {
