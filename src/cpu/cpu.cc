@@ -25,9 +25,14 @@ void Cpu::Tick() {
 
   cycles = opcode_obj.cycles;
 
+  uint16_t pc_bak = PC;
+
   opcode_obj.func(opcode_obj.addressing_mode);
 
-  PC += opcode_obj.bytes;
+  if (pc_bak == PC) {
+    // No jump, go to next instruction.
+    PC += opcode_obj.bytes;
+  }
 }
 
 void Cpu::Reset() {
