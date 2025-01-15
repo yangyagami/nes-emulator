@@ -138,12 +138,19 @@ void Cpu::LDY(AddressingMode addressing) {
 
 void Cpu::PHA(AddressingMode addressing) {
   (void) addressing;  // Not used
-  bus_.CpuWrite8Bit(0x100 + (SP--), A);
+  Push(A);
 }
 
 void Cpu::PHP(AddressingMode addressing) {
   (void) addressing;  // Not used
-  bus_.CpuWrite8Bit(0x100 + (SP--), P.raw);
+  Push(P.raw);
+}
+
+void Cpu::PLA(AddressingMode addressing) {
+  (void) addressing;  // Not used
+  A = Pop();
+
+  UpdateZeroAndNegativeFlag(A);
 }
 
 void Cpu::STA(AddressingMode addressing) {
@@ -241,6 +248,14 @@ void Cpu::Transfer(uint8_t from, uint8_t &to, bool p) {
   if (p) {
     UpdateZeroAndNegativeFlag(to);
   }
+}
+
+void Cpu::Push(uint8_t value) {
+  bus_.CpuWrite8Bit(0x100 + (SP--), value);
+}
+
+uint8_t Cpu::Pop() {
+  return bus_.CpuRead8Bit(0x100 + (++SP));
 }
 
 }  // namespace nes

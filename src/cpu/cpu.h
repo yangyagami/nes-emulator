@@ -77,6 +77,7 @@ struct Cpu {
 
   void PHA(AddressingMode addressing);
   void PHP(AddressingMode addressing);
+  void PLA(AddressingMode addressing);
 
   void STA(AddressingMode addressing);
   void STX(AddressingMode addressing);
@@ -97,6 +98,8 @@ struct Cpu {
   void LoadToReg(uint8_t &reg, AddressingMode addressing);  // Used for LDA, LDX...
   void StoreToMem(uint8_t reg, AddressingMode addressing);  // Used for STA, STX...
   void Transfer(uint8_t from, uint8_t &to, bool p = true);  // Used for tax, tay..., p means whether update status register.
+  void Push(uint8_t value);
+  uint8_t Pop();
 
  private:
   Bus &bus_;
@@ -150,6 +153,8 @@ struct Cpu {
                0x48, 1, 3, &Cpu::PHA),
     NES_OPCODE("PHP", kImplicit,
                0x08, 1, 3, &Cpu::PHP),
+    NES_OPCODE("PLA", kImplicit,
+               0x68, 1, 4, &Cpu::PLA),
 
     NES_OPCODE("STA", kZeroPage,
                0x85, 2, 3, &Cpu::STA),

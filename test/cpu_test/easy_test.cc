@@ -776,6 +776,76 @@ TEST(Stack, PHP) {
   EXPECT_EQ(memory[0x1fe], 0xb0);
 }
 
+TEST(Stack, PLA) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA #$58
+    PHA
+
+    LDA #$33
+    PLA
+
+    LDA #$88
+    PHA
+
+    LDA #$01
+    PLA
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x58,
+    0x48,
+
+    0xa9, 0x33,
+    0x68,
+
+    0xa9, 0x88,
+    0x48,
+
+    0xa9, 0x01,
+    0x68,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x58);
+  EXPECT_EQ(cpu.SP, 0xfe);
+  EXPECT_EQ(memory[0x1ff], 0x58);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x33);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x58);
+  EXPECT_EQ(cpu.SP, 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x88);
+  EXPECT_EQ(cpu.SP, 0xfe);
+  EXPECT_EQ(memory[0x1ff], 0x88);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x1);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x88);
+  EXPECT_EQ(cpu.SP, 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
 TEST(STA, STA) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 
