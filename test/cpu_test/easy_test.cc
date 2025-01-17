@@ -14,6 +14,33 @@ void SafeTick(nes::Cpu &cpu) {
   while (--cpu.cycles > 0);
 }
 
+TEST(ADC, Status) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    ADC #$32
+    ADC #$50
+    ADC #$FF
+    ;; A=$81, P=0b10110001
+  */
+  uint8_t tmp[] = {
+    0x69, 0x32,
+    0x69, 0x50,
+    0x69, 0xff,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+}
+
 TEST(Load, LDA_Immediately) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 
