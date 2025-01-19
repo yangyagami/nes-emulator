@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <functional>
+#include <vector>
 
 namespace nes {
 
@@ -69,8 +70,12 @@ struct Cpu {
 
   uint16_t GetAddress(AddressingMode addressing_mode);
   void UpdateZeroAndNegativeFlag(uint8_t v);
+  void UpdateOverflowFlag(uint8_t a, uint8_t b, uint8_t result);
+  void UpdateCarryFlag(int16_t result);
 
   // Instructions
+  void ADC(AddressingMode addressing);
+
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
   void LDY(AddressingMode addressing);
@@ -110,6 +115,9 @@ struct Cpu {
               std::bind(func, this, std::placeholders::_1)})
 
   const std::map<uint8_t, Opcode> kOpcodes = {
+    NES_OPCODE("ADC", kImmediate,
+               0x69, 2, 2, &Cpu::ADC),
+
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
     NES_OPCODE("LDA", kZeroPage,

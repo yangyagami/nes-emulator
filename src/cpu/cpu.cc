@@ -123,7 +123,36 @@ void Cpu::UpdateZeroAndNegativeFlag(uint8_t v) {
   }
 }
 
+void Cpu::UpdateOverflowFlag(uint8_t a, uint8_t b, uint8_t result) {
+  P.OVERFLOW = 0;
+  if ((a >> 7) == (b >> 7)) {
+    if ((a >> 7) != (result >> 7)) {
+      P.OVERFLOW = 1;
+    }
+  }
+}
+
+void Cpu::UpdateCarryFlag(int16_t result) {
+  P.CARRY = 0;
+
+  if ((result >> 8) != 0) {
+    P.CARRY = 1;
+  }
+}
+
 // Instructions
+void Cpu::ADC(AddressingMode addressing) {
+  uint16_t addr = GetAddress(addressing);
+  uint8_t pre_a = A;
+  uint8_t m = bus_.CpuRead8Bit(addr);
+  int16_t tmp_result = A + m + P.CARRY;
+  A = tmp_result;
+
+  UpdateZeroAndNegativeFlag(A);
+  UpdateOverflowFlag(pre_a, m, A);
+  UpdateCarryFlag(tmp_result);
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }
