@@ -117,6 +117,8 @@ struct Cpu {
   const std::map<uint8_t, Opcode> kOpcodes = {
     NES_OPCODE("ADC", kImmediate,
                0x69, 2, 2, &Cpu::ADC),
+    NES_OPCODE("ADC", kZeroPage,
+               0x65, 2, 3, &Cpu::ADC),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),

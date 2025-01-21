@@ -124,12 +124,8 @@ void Cpu::UpdateZeroAndNegativeFlag(uint8_t v) {
 }
 
 void Cpu::UpdateOverflowFlag(uint8_t a, uint8_t b, uint8_t result) {
-  P.OVERFLOW = 0;
-  if ((a >> 7) == (b >> 7)) {
-    if ((a >> 7) != (result >> 7)) {
-      P.OVERFLOW = 1;
-    }
-  }
+  // #See https://www.nesdev.org/wiki/Instruction_reference#ADC
+  P.OVERFLOW = ((result ^ a) & (result ^ b) & 0x80) != 0;
 }
 
 void Cpu::UpdateCarryFlag(int16_t result) {

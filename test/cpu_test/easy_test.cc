@@ -14,48 +14,6 @@ void SafeTick(nes::Cpu &cpu) {
   while (--cpu.cycles > 0);
 }
 
-TEST(ADC, Status2) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
-
-  /*
-    ADC #$ff
-    ADC #$ff
-    LDA #$ff
-    ADC #$ff
-   */
-  uint8_t tmp[] = {
-    0x69, 0xff,
-    0x69, 0xff,
-    0xa9, 0xff,
-    0x69, 0xff,
-  };
-  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
-    memory[0x0600 + i] = tmp[i];
-  }
-
-  nes::Bus bus(memory);
-
-  nes::Cpu cpu(bus);
-  cpu.Reset();
-  cpu.PC = 0x0600;
-
-  SafeTick(cpu);
-  EXPECT_EQ(cpu.A, 0xff);
-  EXPECT_EQ(cpu.P.raw, 0b10110000);
-
-  SafeTick(cpu);
-  EXPECT_EQ(cpu.A, 0xfe);
-  EXPECT_EQ(cpu.P.raw, 0b10110001);
-
-  SafeTick(cpu);
-  EXPECT_EQ(cpu.A, 0xff);
-  EXPECT_EQ(cpu.P.raw, 0b10110001);
-
-  SafeTick(cpu);
-  EXPECT_EQ(cpu.A, 0xff);
-  EXPECT_EQ(cpu.P.raw, 0b10110001);
-}
-
 TEST(ADC, Status) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 
@@ -112,6 +70,96 @@ TEST(ADC, Status) {
   SafeTick(cpu);
   EXPECT_EQ(cpu.A, 0x02);
   EXPECT_EQ(cpu.P.raw, 0b00110001);
+}
+
+TEST(ADC, Status2) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    ADC #$ff
+    ADC #$ff
+    LDA #$ff
+    ADC #$ff
+   */
+  uint8_t tmp[] = {
+    0x69, 0xff,
+    0x69, 0xff,
+    0xa9, 0xff,
+    0x69, 0xff,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xfe);
+  EXPECT_EQ(cpu.P.raw, 0b10110001);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110001);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xff);
+  EXPECT_EQ(cpu.P.raw, 0b10110001);
+}
+
+TEST(ADC, ZeroPage) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDX #$25
+    STX $33
+    ADC $33
+    ADC #$70
+    ADC #$FF
+   */
+  uint8_t tmp[] = {
+    0xa2, 0x25,
+    0x86, 0x33,
+    0x65, 0x33,
+    0x69, 0x70,
+    0x69, 0xff,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.X, 0x25);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x33], 0x25);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x25);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x95);
+  EXPECT_EQ(cpu.P.raw, 0b11110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x94);
+  EXPECT_EQ(cpu.P.raw, 0b10110001);
 }
 
 TEST(Load, LDA_Immediately) {
