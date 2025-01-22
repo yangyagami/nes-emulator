@@ -342,6 +342,106 @@ TEST(ADC, Indexed) {
   EXPECT_EQ(cpu.P.raw, 0b00110000);
 }
 
+TEST(AND, All) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDX #$02
+    STX $1200
+    STX $20
+
+    LDX #$01
+    LDY #$01
+
+    LDA #$00
+    AND #$02
+
+    LDA #$02
+    AND #$02
+
+    AND $20
+    AND $1f, X
+
+    AND $1200
+    AND $11ff, X
+    AND $11ff, Y
+
+    LDA #$12
+    STA $02
+    AND ($00, X)
+    LDY #$00
+    AND ($01), Y
+   */
+  uint8_t tmp[] = {
+    0xa2, 0x02,
+    0x8e, 0x00, 0x12,
+    0x86, 0x20,
+
+    0xa2, 0x01,
+    0xa0, 0x01,
+
+    0xa9, 0x00,
+    0x29, 0x02,
+
+    0xa9, 0x02,
+    0x29, 0x02,
+
+    0x25, 0x20,
+    0x35, 0x1f,
+
+    0x2d, 0x00, 0x12,
+    0x3d, 0xff, 0x11,
+    0x39, 0xff, 0x11,
+
+    0xa9, 0x12,
+    0x85, 0x02,
+    0x21, 0x00,
+    0xa0, 0x00,
+    0x31, 0x01,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 5; ++i) {
+    SafeTick(cpu);
+  }
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x02);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x02);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x02);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  for (int i = 0; i < 5; ++i) {
+    SafeTick(cpu);
+  }
+  EXPECT_EQ(cpu.A, 0x02);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+}
+
 TEST(Load, LDA_Immediately) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 

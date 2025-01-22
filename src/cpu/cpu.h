@@ -75,6 +75,7 @@ struct Cpu {
 
   // Instructions
   void ADC(AddressingMode addressing);
+  void AND(AddressingMode addressing);
 
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
@@ -131,6 +132,23 @@ struct Cpu {
                0x61, 2, 6, &Cpu::ADC),
     NES_OPCODE("ADC", kIndirectIndexed,
                0x71, 2, 5, &Cpu::ADC),
+
+    NES_OPCODE("AND", kImmediate,
+               0x29, 2, 2, &Cpu::AND),
+    NES_OPCODE("AND", kZeroPage,
+               0x25, 2, 3, &Cpu::AND),
+    NES_OPCODE("AND", kZeroPageX,
+               0x35, 2, 4, &Cpu::AND),
+    NES_OPCODE("AND", kAbsolute,
+               0x2D, 3, 4, &Cpu::AND),
+    NES_OPCODE("AND", kAbsoluteX,
+               0x3D, 3, 4, &Cpu::AND),
+    NES_OPCODE("AND", kAbsoluteY,
+               0x39, 3, 4, &Cpu::AND),
+    NES_OPCODE("AND", kIndexedIndirect,
+               0x21, 2, 6, &Cpu::AND),
+    NES_OPCODE("AND", kIndirectIndexed,
+               0x31, 2, 5, &Cpu::AND),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),

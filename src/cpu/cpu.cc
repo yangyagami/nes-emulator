@@ -149,6 +149,15 @@ void Cpu::ADC(AddressingMode addressing) {
   UpdateCarryFlag(tmp_result);
 }
 
+void Cpu::AND(AddressingMode addressing) {
+  uint16_t addr = GetAddress(addressing);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+
+  A &= m;
+
+  UpdateZeroAndNegativeFlag(A);
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }
