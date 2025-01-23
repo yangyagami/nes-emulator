@@ -673,6 +673,40 @@ TEST(BCC, cycles2) {
   EXPECT_EQ(cpu.cycles, 4);
 }
 
+TEST(BCS, EasyTest) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    test:
+    ADC #$80
+    ADC #$80
+    BCS test
+   */
+  uint8_t tmp[] = {
+    0x69, 0x80,
+    0x69, 0x80,
+    0xb0, 0xfa,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0600);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x81);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
 TEST(Load, LDA_Immediately) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 
