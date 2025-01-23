@@ -564,6 +564,115 @@ TEST(BCC, EasyTest) {
   EXPECT_EQ(cpu.A, 0x04);
 }
 
+TEST(BCC, EasyTest2) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    test:
+    LDA #$80
+    ADC #$80
+    BCC test
+    LDA #$05
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x80,
+    0x69, 0x80,
+    0x90, 0xfa,
+    0xa9, 0x05,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 4; ++i) {
+    SafeTick(cpu);
+  }
+  EXPECT_EQ(cpu.A, 0x05);
+}
+
+TEST(BCC, cycles) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    test:
+    LDA #$80
+    ADC #$80
+    BCC test
+    LDA #$05
+  */
+  uint8_t tmp[] = {
+    0xa9, 0x80,
+    0x69, 0x80,
+    0x90, 0xfa,
+    0xa9, 0x05,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  cpu.Tick();
+  EXPECT_EQ(cpu.cycles, 2);
+}
+
+TEST(BCC, cycles2) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA #$01
+    test:
+    ASL
+    BCC test
+    Multi tims NOP...
+    BCC test
+   */
+  uint8_t tmp[520] = {
+    0xa9, 0x01,
+    0x0a,
+    0x90, 0xfd
+    //    NOP...
+    //    0x90, 0xfd
+  };
+  for (int i = 5; i < 512; ++i) {
+    tmp[i] = 0xEA;
+  }
+  tmp[513] = 0x90;
+  tmp[514] = 0xfd;
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  cpu.Tick();
+  EXPECT_EQ(cpu.cycles, 3);
+  while (--cpu.cycles > 0);
+
+  // Page crossed
+  cpu.PC = 0x600 + 513;
+  cpu.Tick();
+  EXPECT_EQ(cpu.cycles, 4);
+}
+
 TEST(Load, LDA_Immediately) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 

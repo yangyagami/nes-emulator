@@ -179,9 +179,8 @@ void Cpu::ASL(AddressingMode addressing) {
 }
 
 void Cpu::BCC(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
   if (P.CARRY == 0) {
-    PC = addr;
+    PC = GetAddress(addressing);
     cycles++;
   }
 }
