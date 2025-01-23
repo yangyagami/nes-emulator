@@ -158,6 +158,23 @@ void Cpu::AND(AddressingMode addressing) {
   UpdateZeroAndNegativeFlag(A);
 }
 
+void Cpu::ASL(AddressingMode addressing) {
+  int16_t target;
+  if (addressing == kImplicit) {
+    target = A;
+    target <<= 1;
+    A = target;
+  } else {
+    uint16_t addr = GetAddress(addressing);
+    target = bus_.CpuRead8Bit(addr);
+    target <<= 1;
+    bus_.CpuWrite8Bit(addr, target);
+  }
+
+  UpdateZeroAndNegativeFlag(target);
+  UpdateCarryFlag(target);
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }
