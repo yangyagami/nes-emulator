@@ -139,6 +139,13 @@ void Cpu::UpdateCarryFlag(int16_t result) {
   }
 }
 
+void Cpu::BranchIf(AddressingMode addressing, bool condition) {
+  if (condition) {
+    PC = GetAddress(addressing);
+    cycles++;
+  }
+}
+
 // Instructions
 void Cpu::ADC(AddressingMode addressing) {
   uint16_t addr = GetAddress(addressing);
@@ -179,10 +186,7 @@ void Cpu::ASL(AddressingMode addressing) {
 }
 
 void Cpu::BCC(AddressingMode addressing) {
-  if (P.CARRY == 0) {
-    PC = GetAddress(addressing);
-    cycles++;
-  }
+  BranchIf(addressing, (P.CARRY == 0));
 }
 
 void Cpu::LDA(AddressingMode addressing) {

@@ -72,6 +72,7 @@ struct Cpu {
   void UpdateZeroAndNegativeFlag(uint8_t v);
   void UpdateOverflowFlag(uint8_t a, uint8_t b, uint8_t result);
   void UpdateCarryFlag(int16_t result);
+  void BranchIf(AddressingMode addressing, bool condition);
 
   // Instructions
   void ADC(AddressingMode addressing);
