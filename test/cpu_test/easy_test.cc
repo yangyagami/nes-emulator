@@ -525,6 +525,45 @@ TEST(ASL, ALL) {
   EXPECT_EQ(cpu.P.raw, 0b00110011);
 }
 
+TEST(BCC, EasyTest) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA #$01
+    test:
+    ASL
+    BCC test
+   */
+
+  uint8_t tmp[] = {
+    0xa9, 0x01,
+    0x0a,
+    0x90, 0xfd
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x01);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x02);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0602);
+
+  // Jump to test
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x04);
+}
+
 TEST(Load, LDA_Immediately) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 

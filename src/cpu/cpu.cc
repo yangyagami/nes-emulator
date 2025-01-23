@@ -25,14 +25,9 @@ void Cpu::Tick() {
 
   cycles = opcode_obj.cycles;
 
-  uint16_t pc_bak = PC;
-
   opcode_obj.func(opcode_obj.addressing_mode);
 
-  if (pc_bak == PC) {
-    // No jump, go to next instruction.
-    PC += opcode_obj.bytes;
-  }
+  PC += opcode_obj.bytes;
 }
 
 void Cpu::Reset() {
@@ -51,6 +46,14 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
   switch (addressing_mode) {
     case kImmediate: {
       result = PC + 1;
+      break;
+    }
+    case kRelative: {
+      int8_t tmp = bus_.CpuRead8Bit(PC + 1);
+      result = PC + tmp;
+      if (IsCrossPage(PC, result)) {
+        cycles++;
+      }
       break;
     }
     case kAbsolute: {
@@ -173,6 +176,14 @@ void Cpu::ASL(AddressingMode addressing) {
 
   UpdateZeroAndNegativeFlag(target);
   UpdateCarryFlag(target);
+}
+
+void Cpu::BCC(AddressingMode addressing) {
+  uint16_t addr = GetAddress(addressing);
+  if (P.CARRY == 0) {
+    PC = addr;
+    cycles++;
+  }
 }
 
 void Cpu::LDA(AddressingMode addressing) {
