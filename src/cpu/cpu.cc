@@ -51,9 +51,6 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
     case kRelative: {
       int8_t tmp = bus_.CpuRead8Bit(PC + 1);
       result = PC + tmp;
-      if (IsCrossPage(PC, result)) {
-        cycles++;
-      }
       break;
     }
     case kAbsolute: {
@@ -141,8 +138,13 @@ void Cpu::UpdateCarryFlag(int16_t result) {
 
 void Cpu::BranchIf(AddressingMode addressing, bool condition) {
   if (condition) {
+    uint16_t old_pc = PC;
     PC = GetAddress(addressing);
     cycles++;
+
+    if (IsCrossPage(old_pc, PC + 2)) {
+      cycles++;
+    }
   }
 }
 

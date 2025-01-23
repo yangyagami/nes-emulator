@@ -636,21 +636,12 @@ TEST(BCC, cycles2) {
     test:
     ASL
     BCC test
-    Multi tims NOP...
-    BCC test
    */
-  uint8_t tmp[520] = {
+  uint8_t tmp[] = {
     0xa9, 0x01,
     0x0a,
     0x90, 0xfd
-    //    NOP...
-    //    0x90, 0xfd
   };
-  for (int i = 5; i < 512; ++i) {
-    tmp[i] = 0xEA;
-  }
-  tmp[513] = 0x90;
-  tmp[514] = 0xfd;
   for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
     memory[0x0600 + i] = tmp[i];
   }
@@ -667,8 +658,15 @@ TEST(BCC, cycles2) {
   EXPECT_EQ(cpu.cycles, 3);
   while (--cpu.cycles > 0);
 
-  // Page crossed
-  cpu.PC = 0x600 + 513;
+  // PageCrossed test
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x05fd + i] = tmp[i];
+  }
+  cpu.Reset();
+  cpu.PC = 0x05fd;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
   cpu.Tick();
   EXPECT_EQ(cpu.cycles, 4);
 }
@@ -705,6 +703,66 @@ TEST(BCS, EasyTest) {
   SafeTick(cpu);
   EXPECT_EQ(cpu.A, 0x81);
   EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
+TEST(BCS, EasyTest2) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    test:
+    ADC #$40
+    ADC #$80
+    BCS test
+
+    ADC #$80
+    BCS test
+   */
+  uint8_t tmp[] = {
+    0x69, 0x40,
+    0x69, 0x80,
+    0xb0, 0xfa,
+
+    0x69, 0x80,
+    0xb0, 0xf6,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  cpu.Tick();
+  EXPECT_EQ(cpu.PC, 0x0606);
+  EXPECT_EQ(cpu.cycles, 2);
+  while (--cpu.cycles > 0);
+
+  SafeTick(cpu);
+  cpu.Tick();
+  EXPECT_EQ(cpu.PC, 0x0600);
+  EXPECT_EQ(cpu.cycles, 3);
+
+  // PageCrossed test
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x05fb + i] = tmp[i];
+  }
+  cpu.Reset();
+  cpu.PC = 0x05fb;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  cpu.Tick();
+  EXPECT_EQ(cpu.cycles, 2);
+  while (--cpu.cycles > 0);
+
+  SafeTick(cpu);
+  cpu.Tick();
+  EXPECT_EQ(cpu.cycles, 4);
 }
 
 TEST(Load, LDA_Immediately) {
