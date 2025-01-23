@@ -195,6 +195,10 @@ void Cpu::BCS(AddressingMode addressing) {
   BranchIf(addressing, (P.CARRY == 1));
 }
 
+void Cpu::BEQ(AddressingMode addressing) {
+  BranchIf(addressing, (P.ZERO == 1));
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }
