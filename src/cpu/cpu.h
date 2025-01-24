@@ -47,7 +47,7 @@ struct Cpu {
   uint8_t Y;
   uint16_t PC;
   uint8_t SP;
-  union {
+  union Status {
     struct {
       uint8_t CARRY : 1;
       uint8_t ZERO : 1;
@@ -82,6 +82,7 @@ struct Cpu {
   void BCC(AddressingMode addressing);
   void BCS(AddressingMode addressing);
   void BEQ(AddressingMode addressing);
+  void BIT(AddressingMode addressing);
 
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
@@ -173,6 +174,10 @@ struct Cpu {
                0xB0, 2, 2, &Cpu::BCS),
     NES_OPCODE("BEQ", kRelative,
                0xF0, 2, 2, &Cpu::BEQ),
+    NES_OPCODE("BIT", kZeroPage,
+               0x24, 2, 3, &Cpu::BIT),
+    NES_OPCODE("BIT", kAbsolute,
+               0x2C, 3, 4, &Cpu::BIT),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),

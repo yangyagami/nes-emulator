@@ -199,6 +199,21 @@ void Cpu::BEQ(AddressingMode addressing) {
   BranchIf(addressing, (P.ZERO == 1));
 }
 
+void Cpu::BIT(AddressingMode addressing) {
+  uint16_t addr = GetAddress(addressing);
+
+  uint8_t m = bus_.CpuRead8Bit(addr);
+
+  uint8_t v = A & m;
+
+  UpdateZeroAndNegativeFlag(v);
+
+  Status tmp;
+  tmp.raw = m;
+
+  P.OVERFLOW = tmp.OVERFLOW;
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }

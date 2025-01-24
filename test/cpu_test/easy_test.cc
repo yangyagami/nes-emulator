@@ -202,6 +202,128 @@ TEST(ASL, ALL) {
   EXPECT_EQ(cpu.P.raw, 0b00110011);
 }
 
+TEST(BIT, ZeroPage) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA #$80
+    STX $20
+    BIT $20
+
+    LDX #$80
+    STX $20
+    BIT $20
+
+    LDX #$70
+    STX $20
+    BIT $20
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x80,
+    0x86, 0x20,
+    0x24, 0x20,
+
+    0xa2, 0x80,
+    0x86, 0x20,
+    0x24, 0x20,
+
+    0xa2, 0x70,
+    0x86, 0x20,
+    0x24, 0x20,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x80);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x80);
+  EXPECT_EQ(cpu.X, 0x80);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x80);
+  EXPECT_EQ(cpu.X, 0x70);
+  EXPECT_EQ(cpu.P.raw, 0b01110010);
+}
+
+TEST(BIT, Absolute) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    LDA #$80
+    STX $1220
+    BIT $1220
+
+    LDX #$80
+    STX $1220
+    BIT $1220
+
+    LDX #$70
+    STX $1220
+    BIT $1220
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x80,
+    0x8e, 0x20, 0x12,
+    0x2c, 0x20, 0x12,
+
+    0xa2, 0x80,
+    0x8e, 0x20, 0x12,
+    0x2c, 0x20, 0x12,
+
+    0xa2, 0x70,
+    0x8e, 0x20, 0x12,
+    0x2c, 0x20, 0x12,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x80);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x80);
+  EXPECT_EQ(cpu.X, 0x80);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x80);
+  EXPECT_EQ(cpu.X, 0x70);
+  EXPECT_EQ(cpu.P.raw, 0b01110010);
+}
+
 TEST(Stack, PHA) {
   std::array<uint8_t, 0xFFFF> memory = { 0 };
 
