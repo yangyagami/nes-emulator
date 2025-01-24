@@ -234,6 +234,26 @@ void Cpu::BVS(AddressingMode addressing) {
   BranchIf(addressing, (P.OVERFLOW == 1));
 }
 
+void Cpu::CLC(AddressingMode addressing) {
+  (void) addressing;
+  P.CARRY = 0;
+}
+
+void Cpu::CLD(AddressingMode addressing) {
+  (void) addressing;
+  P.DECIMAL = 0;
+}
+
+void Cpu::CLI(AddressingMode addressing) {
+  (void) addressing;
+  P.INTERRUPT_DISABLE = 0;
+}
+
+void Cpu::CLV(AddressingMode addressing) {
+  (void) addressing;
+  P.OVERFLOW = 0;
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }
@@ -261,6 +281,18 @@ void Cpu::PLA(AddressingMode addressing) {
   A = Pop();
 
   UpdateZeroAndNegativeFlag(A);
+}
+
+void Cpu::SEC(AddressingMode addressing) {
+  P.CARRY = 1;
+}
+
+void Cpu::SED(AddressingMode addressing) {
+  P.DECIMAL = 1;
+}
+
+void Cpu::SEI(AddressingMode addressing) {
+  P.INTERRUPT_DISABLE = 1;
 }
 
 void Cpu::STA(AddressingMode addressing) {

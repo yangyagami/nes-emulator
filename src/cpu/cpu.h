@@ -89,6 +89,11 @@ struct Cpu {
   void BVC(AddressingMode addressing);
   void BVS(AddressingMode addressing);
 
+  void CLC(AddressingMode addressing);
+  void CLD(AddressingMode addressing);
+  void CLI(AddressingMode addressing);
+  void CLV(AddressingMode addressing);
+
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
   void LDY(AddressingMode addressing);
@@ -97,6 +102,9 @@ struct Cpu {
   void PHP(AddressingMode addressing);
   void PLA(AddressingMode addressing);
 
+  void SEC(AddressingMode addressing);
+  void SED(AddressingMode addressing);
+  void SEI(AddressingMode addressing);
   void STA(AddressingMode addressing);
   void STX(AddressingMode addressing);
   void STY(AddressingMode addressing);
