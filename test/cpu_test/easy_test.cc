@@ -670,6 +670,69 @@ TEST(STY, STY) {
   EXPECT_EQ(cpu.P.raw, 0b00110000);
 }
 
+TEST(ClearAndSet, All) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    SEC
+    CLC
+
+    SED
+    CLD
+
+    SEI
+    CLI
+
+    ADC #$80
+    ADC #$80
+    CLV
+   */
+  uint8_t tmp[] = {
+    0x38,
+    0x18,
+
+    0xf8,
+    0xd8,
+
+    0x78,
+    0x58,
+
+    0x69, 0x80,
+    0x69, 0x80,
+    0xb8
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.CARRY, 1);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.CARRY, 0);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.DECIMAL, 1);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.DECIMAL, 0);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.INTERRUPT_DISABLE, 1);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.INTERRUPT_DISABLE, 0);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.OVERFLOW, 0);
+}
+
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
