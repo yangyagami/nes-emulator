@@ -226,6 +226,14 @@ void Cpu::BPL(AddressingMode addressing) {
   BranchIf(addressing, (P.NEGATIVE == 0));
 }
 
+void Cpu::BVC(AddressingMode addressing) {
+  BranchIf(addressing, (P.OVERFLOW == 0));
+}
+
+void Cpu::BVS(AddressingMode addressing) {
+  BranchIf(addressing, (P.OVERFLOW == 1));
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }

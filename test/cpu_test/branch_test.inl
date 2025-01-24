@@ -399,3 +399,77 @@ TEST(BPL, EasyTest) {
   SafeTick(cpu);
   EXPECT_EQ(cpu.PC, 0x0600);
 }
+
+TEST(BVC, EasyTest) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    test:
+    ADC #$70
+    ADC #$70
+    BVC test
+    ADC #$05
+    BVC test
+  */
+  uint8_t tmp[] = {
+    0x69, 0x70,
+    0x69, 0x70,
+    0x50, 0xfa,
+    0x69, 0x05,
+    0x50, 0xf6,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0606);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0600);
+}
+
+TEST(BVS, EasyTest) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    test:
+    ADC #$05
+    BVS test
+    ADC #$70
+    ADC #$70
+    BVS test
+  */
+  uint8_t tmp[] = {
+    0x69, 0x05,
+    0x70, 0xfc,
+    0x69, 0x70,
+    0x69, 0x70,
+    0x70, 0xf6,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0604);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0600);
+}
