@@ -214,6 +214,18 @@ void Cpu::BIT(AddressingMode addressing) {
   P.OVERFLOW = tmp.OVERFLOW;
 }
 
+void Cpu::BMI(AddressingMode addressing) {
+  BranchIf(addressing, (P.NEGATIVE == 1));
+}
+
+void Cpu::BNE(AddressingMode addressing) {
+  BranchIf(addressing, (P.ZERO == 0));
+}
+
+void Cpu::BPL(AddressingMode addressing) {
+  BranchIf(addressing, (P.NEGATIVE == 0));
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }

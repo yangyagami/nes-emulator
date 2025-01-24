@@ -83,6 +83,9 @@ struct Cpu {
   void BCS(AddressingMode addressing);
   void BEQ(AddressingMode addressing);
   void BIT(AddressingMode addressing);
+  void BMI(AddressingMode addressing);
+  void BNE(AddressingMode addressing);
+  void BPL(AddressingMode addressing);
 
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
@@ -178,6 +181,12 @@ struct Cpu {
                0x24, 2, 3, &Cpu::BIT),
     NES_OPCODE("BIT", kAbsolute,
                0x2C, 3, 4, &Cpu::BIT),
+    NES_OPCODE("BMI", kRelative,
+               0x30, 2, 2, &Cpu::BMI),
+    NES_OPCODE("BNE", kRelative,
+               0xD0, 2, 2, &Cpu::BNE),
+    NES_OPCODE("BPL", kRelative,
+               0x10, 2, 2, &Cpu::BPL),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),

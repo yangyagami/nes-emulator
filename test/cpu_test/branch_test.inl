@@ -307,3 +307,95 @@ TEST(BEQ, EasyTest) {
   EXPECT_EQ(cpu.cycles, 4);
   while (--cpu.cycles > 0);
 }
+
+// Below branch, just check if jumped.
+TEST(BMI, EasyTest) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    test:
+    LDA #$80
+    BMI test
+  */
+  uint8_t tmp[] = {
+    0xa9, 0x80,
+    0x30, 0xfc,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x80);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0600);
+}
+
+TEST(BNE, EasyTest) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    test:
+    BNE test
+  */
+  uint8_t tmp[] = {
+    0xd0, 0xfe,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0600);
+}
+
+TEST(BPL, EasyTest) {
+  std::array<uint8_t, 0xFFFF> memory = { 0 };
+
+  /*
+    test:
+    LDA #$80
+    BPL test
+    LDA #$01
+    BPL test
+  */
+  uint8_t tmp[] = {
+    0xa9, 0x80,
+    0x10, 0xfc,
+    0xa9, 0x01,
+    0x10, 0xf8,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x80);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0604);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x01);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0600);
+}
