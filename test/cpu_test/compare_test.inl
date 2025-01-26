@@ -207,3 +207,155 @@ TEST(CMP, ZeroPageX) {
   SafeTick(cpu);
   EXPECT_EQ(cpu.P.raw, 0b10110001);
 }
+
+TEST(CMP, Absolute) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDA #$FF
+    STA $3300
+
+    CMP $3300
+
+    LDX #$08
+    CMP $32F8, X
+
+    LDY #$08
+    CMP $32F8, Y
+   */
+  uint8_t tmp[] = {
+    0xa9, 0xff,
+    0x8d, 0x00, 0x33,
+
+    0xcd, 0x00, 0x33,
+
+    0xa2, 0x08,
+    0xdd, 0xf8, 0x32,
+
+    0xa0, 0x08,
+    0xd9, 0xf8, 0x32
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+}
+
+TEST(CMP, IndexedIndirect) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDY #$33
+    STY $01
+    LDY #$22
+    STY $02
+
+    LDX #$FF
+    STX $2233
+
+    LDA #$FF
+    LDX #$01
+    CMP ($00, X)
+   */
+  uint8_t tmp[] = {
+    0xa0, 0x33,
+    0x84, 0x01,
+    0xa0, 0x22,
+    0x84, 0x02,
+
+    0xa2, 0xff,
+    0x8e, 0x33, 0x22,
+
+    0xa9, 0xff,
+    0xa2, 0x01,
+    0xc1, 0x00,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 6; ++i) {
+    SafeTick(cpu);
+  }
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+}
+
+TEST(CMP, IndirectIndexed) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDY #$00
+    STY $01
+    LDY #$22
+    STY $02
+
+    LDX #$FF
+    STX $2233
+
+    LDA #$FF
+    LDY #$33
+    CMP ($01), Y
+   */
+  uint8_t tmp[] = {
+    0xa0, 0x00,
+    0x84, 0x01,
+    0xa0, 0x22,
+    0x84, 0x02,
+
+    0xa2, 0xff,
+    0x8e, 0x33, 0x22,
+
+    0xa9, 0xff,
+    0xa0, 0x33,
+    0xd1, 0x01,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 6; ++i) {
+    SafeTick(cpu);
+  }
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+}
