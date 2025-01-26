@@ -152,6 +152,16 @@ void Cpu::BranchIf(AddressingMode addressing, bool condition) {
   }
 }
 
+void Cpu::Compare(AddressingMode addressing, uint8_t reg) {
+  uint16_t addr = GetAddress(addressing);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+
+  uint8_t result = reg - m;
+
+  UpdateZeroAndNegativeFlag(result);
+  P.CARRY = (reg >= m);
+}
+
 // Instructions
 void Cpu::ADC(AddressingMode addressing) {
   uint16_t addr = GetAddress(addressing);
@@ -277,13 +287,7 @@ void Cpu::CLV(AddressingMode addressing) {
 }
 
 void Cpu::CMP(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
-  uint8_t m = bus_.CpuRead8Bit(addr);
-
-  uint8_t result = A - m;
-
-  UpdateZeroAndNegativeFlag(result);
-  P.CARRY = A >= m;
+  Compare(addressing, A);
 }
 
 void Cpu::LDA(AddressingMode addressing) {
