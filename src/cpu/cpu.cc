@@ -15,6 +15,8 @@ Cpu::Cpu(Bus &bus) : bus_(bus) {}
 void Cpu::Tick() {
   nes_assert(cycles == 0, std::format("Invalid cycles: {}", cycles));
 
+  jumped_ = false;
+
   // Fetch opcode
   uint8_t opcode = bus_.CpuRead8Bit(PC);
 
@@ -27,7 +29,9 @@ void Cpu::Tick() {
 
   opcode_obj.func(opcode_obj.addressing_mode);
 
-  PC += opcode_obj.bytes;
+  if (!jumped_) {
+    PC += opcode_obj.bytes;
+  }
 }
 
 void Cpu::Reset() {
@@ -232,6 +236,24 @@ void Cpu::BVC(AddressingMode addressing) {
 
 void Cpu::BVS(AddressingMode addressing) {
   BranchIf(addressing, (P.OVERFLOW == 1));
+}
+
+void Cpu::BRK(AddressingMode addressing) {
+  (void) addressing;
+
+  uint16_t new_pc = PC + 2;
+  Push((new_pc & 0xFF));  // low bytes
+  Push(new_pc >> 8);  // high bytes
+  Status tmp;
+  tmp = P;
+  tmp.B = 1;
+  tmp.UNUSED = 1;
+  Push(tmp.raw);
+  PC = bus_.CpuRead16Bit(0xFFFE);
+
+  P.INTERRUPT_DISABLE = 1;
+
+  jumped_ = true;
 }
 
 void Cpu::CLC(AddressingMode addressing) {

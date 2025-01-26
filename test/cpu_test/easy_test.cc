@@ -20,7 +20,7 @@ void SafeTick(nes::Cpu &cpu) {
 #include "branch_test.inl"
 
 TEST(AND, All) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDX #$02
@@ -120,7 +120,7 @@ TEST(AND, All) {
 }
 
 TEST(ASL, ALL) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$80
@@ -203,7 +203,7 @@ TEST(ASL, ALL) {
 }
 
 TEST(BIT, ZeroPage) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$80
@@ -264,7 +264,7 @@ TEST(BIT, ZeroPage) {
 }
 
 TEST(BIT, Absolute) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$80
@@ -324,8 +324,35 @@ TEST(BIT, Absolute) {
   EXPECT_EQ(cpu.P.raw, 0b01110010);
 }
 
+TEST(BRK, EasyTest) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    ;; Preset ($FFFE) = $3231
+    BRK
+  */
+  uint8_t tmp[] = { 0x00 };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  memory[0xFFFE] = 0x31;
+  memory[0xFFFF] = 0x32;
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x3231);
+  EXPECT_EQ(memory[0x1FF], 0x02);
+  EXPECT_EQ(memory[0x1FE], 0x06);
+  EXPECT_EQ(memory[0x1FD], 0b00110000);
+}
+
 TEST(Stack, PHA) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$33
@@ -363,7 +390,7 @@ TEST(Stack, PHA) {
 }
 
 TEST(Stack, PHP) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     PHP
@@ -401,7 +428,7 @@ TEST(Stack, PHP) {
 }
 
 TEST(Stack, PLA) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$58
@@ -471,7 +498,7 @@ TEST(Stack, PLA) {
 }
 
 TEST(STA, STA) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$14
@@ -567,7 +594,7 @@ TEST(STA, STA) {
 }
 
 TEST(STX, STX) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDX #$aa
@@ -619,7 +646,7 @@ TEST(STX, STX) {
 }
 
 TEST(STY, STY) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDY #$aa
@@ -671,7 +698,7 @@ TEST(STY, STY) {
 }
 
 TEST(ClearAndSet, All) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     SEC

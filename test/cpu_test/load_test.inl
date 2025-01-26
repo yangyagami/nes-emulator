@@ -1,5 +1,5 @@
 TEST(Load, LDA_Immediately) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$05
@@ -38,7 +38,7 @@ TEST(Load, LDA_Immediately) {
 }
 
 TEST(Load, LDA_ZeroPage) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$32
@@ -83,7 +83,7 @@ TEST(Load, LDA_ZeroPage) {
 }
 
 TEST(Load, LDA_ZeroPageX) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$05
@@ -147,7 +147,7 @@ TEST(Load, LDA_ZeroPageX) {
 }
 
 TEST(Load, LDA_AbsoluteAddressing) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$02
@@ -182,7 +182,7 @@ TEST(Load, LDA_AbsoluteAddressing) {
 }
 
 TEST(Load, LDA_AbsoluteX) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA $0000, X
@@ -233,7 +233,7 @@ TEST(Load, LDA_AbsoluteX) {
 }
 
 TEST(Load, LDA_AbsoluteY) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA $0000, Y
@@ -284,7 +284,7 @@ TEST(Load, LDA_AbsoluteY) {
 }
 
 TEST(Load, LDA_IndirectX) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDX #$01
@@ -351,7 +351,7 @@ TEST(Load, LDA_IndirectX) {
 }
 
 TEST(Load, LDA_IndirectY) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDY #$01
@@ -418,7 +418,7 @@ TEST(Load, LDA_IndirectY) {
 }
 
 TEST(Load, LDX) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDX #$fa
@@ -479,7 +479,7 @@ TEST(Load, LDX) {
 }
 
 TEST(Load, LDX_ZeroPageY) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$12
@@ -522,7 +522,7 @@ TEST(Load, LDX_ZeroPageY) {
 }
 
 TEST(Load, LDX_AbsoluteY) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$12
@@ -600,7 +600,7 @@ TEST(Load, LDX_AbsoluteY) {
 }
 
 TEST(Load, LDY) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDY #$88     ;; immediate

@@ -1,5 +1,5 @@
 TEST(Transfer, TAX) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$32
@@ -52,7 +52,7 @@ TEST(Transfer, TAX) {
 }
 
 TEST(Transfer, TAY) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$32
@@ -105,7 +105,7 @@ TEST(Transfer, TAY) {
 }
 
 TEST(Transfer, TSX) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$02
@@ -156,7 +156,7 @@ TEST(Transfer, TSX) {
 }
 
 TEST(Transfer, TXA) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDX #$32
@@ -209,7 +209,7 @@ TEST(Transfer, TXA) {
 }
 
 TEST(Transfer, TXS) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDX #$88
@@ -242,7 +242,7 @@ TEST(Transfer, TXS) {
 }
 
 TEST(Transfer, TYA) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDY #$32

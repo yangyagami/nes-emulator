@@ -1,5 +1,5 @@
 TEST(ADC, Status) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     ADC #$32
@@ -57,7 +57,7 @@ TEST(ADC, Status) {
 }
 
 TEST(ADC, Status2) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     ADC #$ff
@@ -99,7 +99,7 @@ TEST(ADC, Status2) {
 }
 
 TEST(ADC, ZeroPage) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDX #$25
@@ -147,7 +147,7 @@ TEST(ADC, ZeroPage) {
 }
 
 TEST(ADC, ZeroPageX) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDY #$88
@@ -189,7 +189,7 @@ TEST(ADC, ZeroPageX) {
 }
 
 TEST(ADC, Absolute) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     ;; Absolute
@@ -259,7 +259,7 @@ TEST(ADC, Absolute) {
 }
 
 TEST(ADC, Indexed) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDX #$01

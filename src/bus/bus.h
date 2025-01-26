@@ -7,7 +7,7 @@
 namespace nes {
 class Bus {
  public:
-  Bus(std::array<uint8_t, 0xFFFF> &memory);
+  Bus(std::array<uint8_t, 0x10000> &memory);
   void CpuWrite8Bit(uint16_t address, uint8_t value);
 
   void CpuWrite16Bit(uint16_t address, uint16_t value);
@@ -17,7 +17,7 @@ class Bus {
   uint16_t CpuRead16Bit(uint16_t address);
 
  private:
-  std::array<uint8_t, 0xFFFF> &memory_;
+  std::array<uint8_t, 0x10000> &memory_;
 };
 }  // namespace nes
 

@@ -1,5 +1,5 @@
 TEST(BCC, EasyTest) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$01
@@ -38,7 +38,7 @@ TEST(BCC, EasyTest) {
 }
 
 TEST(BCC, EasyTest2) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:
@@ -70,7 +70,7 @@ TEST(BCC, EasyTest2) {
 }
 
 TEST(BCC, cycles) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:
@@ -102,7 +102,7 @@ TEST(BCC, cycles) {
 }
 
 TEST(BCC, cycles2) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     LDA #$01
@@ -145,7 +145,7 @@ TEST(BCC, cycles2) {
 }
 
 TEST(BCS, EasyTest) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:
@@ -179,7 +179,7 @@ TEST(BCS, EasyTest) {
 }
 
 TEST(BCS, EasyTest2) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:
@@ -239,7 +239,7 @@ TEST(BCS, EasyTest2) {
 }
 
 TEST(BEQ, EasyTest) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:
@@ -310,7 +310,7 @@ TEST(BEQ, EasyTest) {
 
 // Below branch, just check if jumped.
 TEST(BMI, EasyTest) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:
@@ -338,7 +338,7 @@ TEST(BMI, EasyTest) {
 }
 
 TEST(BNE, EasyTest) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:
@@ -362,7 +362,7 @@ TEST(BNE, EasyTest) {
 }
 
 TEST(BPL, EasyTest) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:
@@ -401,7 +401,7 @@ TEST(BPL, EasyTest) {
 }
 
 TEST(BVC, EasyTest) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:
@@ -438,7 +438,7 @@ TEST(BVC, EasyTest) {
 }
 
 TEST(BVS, EasyTest) {
-  std::array<uint8_t, 0xFFFF> memory = { 0 };
+  std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
     test:

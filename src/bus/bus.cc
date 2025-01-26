@@ -5,7 +5,7 @@
 #include <cassert>
 
 namespace nes {
-Bus::Bus(std::array<uint8_t, 0xFFFF> &memory) : memory_(memory) {}
+Bus::Bus(std::array<uint8_t, 0x10000> &memory) : memory_(memory) {}
 
 void Bus::CpuWrite8Bit(uint16_t address, uint8_t value) {
   // assert(address < 0x0800);

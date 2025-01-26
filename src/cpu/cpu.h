@@ -88,6 +88,7 @@ struct Cpu {
   void BPL(AddressingMode addressing);
   void BVC(AddressingMode addressing);
   void BVS(AddressingMode addressing);
+  void BRK(AddressingMode addressing);
 
   void CLC(AddressingMode addressing);
   void CLD(AddressingMode addressing);
@@ -129,6 +130,7 @@ struct Cpu {
 
  private:
   Bus &bus_;
+  bool jumped_;
 
 #define NES_OPCODE(name, mode, code, bytes, cycles, func) \
   std::pair(code, \
@@ -201,6 +203,8 @@ struct Cpu {
                0x50, 2, 2, &Cpu::BVC),
     NES_OPCODE("BVS", kRelative,
                0x70, 2, 2, &Cpu::BVS),
+    NES_OPCODE("BRK", kImplicit,
+               0x00, 2, 7, &Cpu::BRK),
 
     NES_OPCODE("CLC", kImplicit,
                0x18, 1, 2, &Cpu::CLC),
