@@ -19,6 +19,7 @@ void SafeTick(nes::Cpu &cpu) {
 #include "transfer_test.inl"
 #include "branch_test.inl"
 #include "compare_test.inl"
+#include "increment_test.inl"
 
 TEST(AND, All) {
   std::array<uint8_t, 0x10000> memory = { 0 };

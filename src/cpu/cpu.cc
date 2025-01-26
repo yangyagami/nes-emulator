@@ -298,6 +298,15 @@ void Cpu::CPY(AddressingMode addressing) {
   Compare(addressing, Y);
 }
 
+void Cpu::DEC(AddressingMode addressing) {
+  uint16_t addr = GetAddress(addressing);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+  m -= 1;
+  bus_.CpuWrite8Bit(addr, m);
+
+  UpdateZeroAndNegativeFlag(m);
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }
