@@ -359,3 +359,57 @@ TEST(CMP, IndirectIndexed) {
   SafeTick(cpu);
   EXPECT_EQ(cpu.P.raw, 0b00110011);
 }
+
+TEST(CPX, All) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDX #$80
+    CPX #$80
+
+
+    LDA #$70
+    STA $03
+    CPX $03
+
+    LDA #$00
+    STA $03
+    CPX $0003
+  */
+  uint8_t tmp[] = {
+    0xa2, 0x80,
+    0xe0, 0x80,
+
+    0xa9, 0x70,
+    0x85, 0x03,
+    0xe4, 0x03,
+
+    0xa9, 0x00,
+    0x85, 0x03,
+    0xec, 0x03, 0x00,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b10110001);
+}

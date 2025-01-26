@@ -290,6 +290,10 @@ void Cpu::CMP(AddressingMode addressing) {
   Compare(addressing, A);
 }
 
+void Cpu::CPX(AddressingMode addressing) {
+  Compare(addressing, X);
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }
