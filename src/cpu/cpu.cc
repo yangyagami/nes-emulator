@@ -276,6 +276,16 @@ void Cpu::CLV(AddressingMode addressing) {
   P.OVERFLOW = 0;
 }
 
+void Cpu::CMP(AddressingMode addressing) {
+  uint16_t addr = GetAddress(addressing);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+
+  uint8_t result = A - m;
+
+  UpdateZeroAndNegativeFlag(result);
+  P.CARRY = A >= m;
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }
@@ -306,26 +316,32 @@ void Cpu::PLA(AddressingMode addressing) {
 }
 
 void Cpu::SEC(AddressingMode addressing) {
+  (void) addressing;
   P.CARRY = 1;
 }
 
 void Cpu::SED(AddressingMode addressing) {
+  (void) addressing;
   P.DECIMAL = 1;
 }
 
 void Cpu::SEI(AddressingMode addressing) {
+  (void) addressing;
   P.INTERRUPT_DISABLE = 1;
 }
 
 void Cpu::STA(AddressingMode addressing) {
+  (void) addressing;
   StoreToMem(A, addressing);
 }
 
 void Cpu::STX(AddressingMode addressing) {
+  (void) addressing;
   StoreToMem(X, addressing);
 }
 
 void Cpu::STY(AddressingMode addressing) {
+  (void) addressing;
   StoreToMem(Y, addressing);
 }
 
