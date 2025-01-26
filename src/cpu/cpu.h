@@ -97,6 +97,7 @@ struct Cpu {
   void CLV(AddressingMode addressing);
   void CMP(AddressingMode addressing);
   void CPX(AddressingMode addressing);
+  void CPY(AddressingMode addressing);
 
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
@@ -239,6 +240,12 @@ struct Cpu {
                0xE4, 2, 3, &Cpu::CPX),
     NES_OPCODE("CPX", kAbsolute,
                0xEC, 3, 4, &Cpu::CPX),
+    NES_OPCODE("CPY", kImmediate,
+               0xC0, 2, 2, &Cpu::CPY),
+    NES_OPCODE("CPY", kZeroPage,
+               0xC4, 2, 3, &Cpu::CPY),
+    NES_OPCODE("CPY", kAbsolute,
+               0xCC, 3, 4, &Cpu::CPY),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),

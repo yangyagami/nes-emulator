@@ -294,6 +294,10 @@ void Cpu::CPX(AddressingMode addressing) {
   Compare(addressing, X);
 }
 
+void Cpu::CPY(AddressingMode addressing) {
+  Compare(addressing, Y);
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }

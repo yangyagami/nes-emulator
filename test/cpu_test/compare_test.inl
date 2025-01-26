@@ -413,3 +413,57 @@ TEST(CPX, All) {
   SafeTick(cpu);
   EXPECT_EQ(cpu.P.raw, 0b10110001);
 }
+
+TEST(CPY, All) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDY #$80
+    CPY #$80
+
+
+    LDA #$70
+    STA $03
+    CPY $03
+
+    LDA #$FF
+    STA $03
+    CPY $0003
+  */
+  uint8_t tmp[] = {
+    0xa0, 0x80,
+    0xc0, 0x80,
+
+    0xa9, 0x70,
+    0x85, 0x03,
+    0xc4, 0x03,
+
+    0xa9, 0xff,
+    0x85, 0x03,
+    0xcc, 0x03, 0x00,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
