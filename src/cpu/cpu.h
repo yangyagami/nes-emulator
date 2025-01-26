@@ -219,6 +219,8 @@ struct Cpu {
                0xC9, 2, 2, &Cpu::CMP),
     NES_OPCODE("CMP", kZeroPage,
                0xC5, 2, 3, &Cpu::CMP),
+    NES_OPCODE("CMP", kZeroPageX,
+               0xD5, 2, 4, &Cpu::CMP),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
