@@ -397,6 +397,10 @@ void Cpu::LSR(AddressingMode addressing) {
   }
 }
 
+void Cpu::NOP(AddressingMode addressing) {
+  (void) addressing;
+}
+
 void Cpu::PHA(AddressingMode addressing) {
   (void) addressing;  // Not used
   Push(A);

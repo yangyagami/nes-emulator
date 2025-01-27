@@ -326,26 +326,32 @@ int main() {
   InitWindow(sw, sh, "snake test");
   SetTargetFPS(60);
 
-  Color colors[] = {
-    BLACK,
-    SKYBLUE,
-    RED,
-    GREEN,
-    BLUE,
-    PURPLE,
-    ORANGE,
-    YELLOW,
-    GRAY,
-    LIGHTGRAY,
-    WHITE,
-  };
+  Color colors[256];
+  for (int i = 0; i < 256; ++i) {
+    colors[i] = { i, GetRandomValue(0, 255), GetRandomValue(0, 255), 255 };
+  }
 
   while (!WindowShouldClose()) {
     uint8_t rand_v = GetRandomValue(0, 255);
     memory[0xFE] = rand_v;
 
-    cpu.Tick();
-    while (--cpu.cycles > 0);
+    if (IsKeyPressed(KEY_W)) {
+      memory[0xFF] = 0x77;
+    }
+    if (IsKeyPressed(KEY_A)) {
+      memory[0xFF] = 0x61;
+    }
+    if (IsKeyPressed(KEY_S)) {
+      memory[0xFF] = 0x73;
+    }
+    if (IsKeyPressed(KEY_D)) {
+      memory[0xFF] = 0x64;
+    }
+
+    for (int i = 0; i < 120; ++i) {
+      cpu.Tick();
+      while (--cpu.cycles > 0);
+    }
 
     BeginDrawing();
     ClearBackground(BLACK);
