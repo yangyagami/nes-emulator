@@ -336,6 +336,14 @@ void Cpu::INC(AddressingMode addressing) {
   bus_.CpuWrite8Bit(addr, m);
 }
 
+void Cpu::INX(AddressingMode addressing) {
+  Increment(&X, 1);
+}
+
+void Cpu::INY(AddressingMode addressing) {
+  Increment(&Y, 1);
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }

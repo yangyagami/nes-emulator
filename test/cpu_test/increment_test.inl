@@ -417,3 +417,72 @@ TEST(INC, AbsoluteX) {
   EXPECT_EQ(cpu.A, 0xFF);
   EXPECT_EQ(cpu.P.raw, 0b00110011);
 }
+
+TEST(Increment, Registers) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    INX
+    LDX #$FF
+    INX
+
+    INY
+    LDY #$FF
+    INY
+
+    LDX #$7f
+    INX
+
+    LDY #$7f
+    INY
+   */
+  uint8_t tmp[] = {
+    0xe8,
+    0xa2, 0xff,
+    0xe8,
+
+    0xc8,
+    0xa0, 0xff,
+    0xc8,
+
+    0xa2, 0x7f,
+    0xe8,
+
+    0xa0, 0x7f,
+    0xc8,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.X, 0x01);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.X, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.Y, 0x01);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.Y, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.X, 0x80);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.Y, 0x80);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
