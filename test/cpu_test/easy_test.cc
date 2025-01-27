@@ -817,6 +817,62 @@ TEST(JSR, All) {
 }
 
 TEST(LSR, Implicit) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    LDA #$01
+    LSR
+
+    LDA #$30
+    LSR
+
+    LDA #$FF
+    LSR
+
+    LDA #$8F
+    LSR
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x01,
+    0x4a,
+
+    0xa9, 0x30,
+    0x4a,
+
+    0xa9, 0xff,
+    0x4a,
+
+    0xa9, 0x8f,
+    0x4a,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x18);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x7F);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x47);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
 }
 
 TEST(Stack, PHA) {

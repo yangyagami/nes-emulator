@@ -389,6 +389,14 @@ void Cpu::LDY(AddressingMode addressing) {
   LoadToReg(Y, addressing);
 }
 
+void Cpu::LSR(AddressingMode addressing) {
+  if (addressing == kImplicit) {
+    P.CARRY = (A & 0x01);
+    A >>= 1;
+    UpdateZeroAndNegativeFlag(A);
+  }
+}
+
 void Cpu::PHA(AddressingMode addressing) {
   (void) addressing;  // Not used
   Push(A);

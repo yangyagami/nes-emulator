@@ -116,6 +116,7 @@ struct Cpu {
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
   void LDY(AddressingMode addressing);
+  void LSR(AddressingMode addressing);
 
   void PHA(AddressingMode addressing);
   void PHP(AddressingMode addressing);
@@ -351,6 +352,8 @@ struct Cpu {
                0xAC, 3, 4, &Cpu::LDY),
     NES_OPCODE("LDY", kAbsoluteX,
                0xBC, 3, 4, &Cpu::LDY),
+    NES_OPCODE("LSR", kImplicit,
+               0x4A, 1, 2, &Cpu::LSR),
 
     NES_OPCODE("PHA", kImplicit,
                0x48, 1, 3, &Cpu::PHA),
