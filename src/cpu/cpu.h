@@ -290,6 +290,10 @@ struct Cpu {
                0xE6, 2, 5, &Cpu::INC),
     NES_OPCODE("INC", kZeroPageX,
                0xF6, 2, 6, &Cpu::INC),
+    NES_OPCODE("INC", kAbsolute,
+               0xEE, 3, 6, &Cpu::INC),
+    NES_OPCODE("INC", kAbsoluteX,
+               0xFE, 3, 7, &Cpu::INC),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
