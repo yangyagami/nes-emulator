@@ -320,9 +320,46 @@ int main() {
   cpu.Reset();
   cpu.PC = 0x0600;
 
-  while (true) {
+  // range($0200, $05ff) used to draw pixels.
+  int sw = 32 * 20;
+  int sh = 32 * 20;
+  InitWindow(sw, sh, "snake test");
+  SetTargetFPS(60);
+
+  Color colors[] = {
+    BLACK,
+    SKYBLUE,
+    RED,
+    GREEN,
+    BLUE,
+    PURPLE,
+    ORANGE,
+    YELLOW,
+    GRAY,
+    LIGHTGRAY,
+    WHITE,
+  };
+
+  while (!WindowShouldClose()) {
+    uint8_t rand_v = GetRandomValue(0, 255);
+    memory[0xFE] = rand_v;
+
     cpu.Tick();
     while (--cpu.cycles > 0);
+
+    BeginDrawing();
+    ClearBackground(BLACK);
+    int x = 0;
+    int y = 0;
+    for (uint16_t i = 0x0200; i <= 0x05ff; ++i) {
+      if (i != 0x0200 && i % 32 == 0) {
+        x = 0;
+        y++;
+      }
+      DrawRectangle((x++) * 20, y * 20, 20, 20,
+                    colors[memory[i]]);
+    }
+    EndDrawing();
   }
 
   return 0;

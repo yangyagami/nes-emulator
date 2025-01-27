@@ -816,6 +816,9 @@ TEST(JSR, All) {
 
 }
 
+TEST(LSR, Implicit) {
+}
+
 TEST(Stack, PHA) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 
@@ -1228,40 +1231,5 @@ TEST(ClearAndSet, All) {
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
-  // // range($0200, $05ff) used to draw pixels.
-  // int sw = 32 * 20;
-  // int sh = 32 * 20;
-  // InitWindow(sw, sh, "easy test");
-  // SetTargetFPS(60);
-
-  // Color colors[] = {
-  //   BLACK,
-  //   BLACK,
-  //   RED,
-  //   GREEN,
-  //   BLUE,
-  //   PURPLE,
-  //   ORANGE,
-  //   YELLOW,
-  //   GRAY,
-  //   LIGHTGRAY,
-  //   WHITE,
-  // };
-
-  // while (!WindowShouldClose()) {
-  //   BeginDrawing();
-  //   ClearBackground(BLACK);
-  //   int x = 0;
-  //   int y = 0;
-  //   for (uint16_t i = 0x0200; i <= 0x05ff; ++i) {
-  //     if (i != 0x0200 && i % 32 == 0) {
-  //       x = 0;
-  //       y++;
-  //     }
-  //     DrawRectangle((x++) * 20, y * 20, 20, 20,
-  //                   colors[memory[i]]);
-  //   }
-  //   EndDrawing();
-  // }
   return 0;
 }
