@@ -473,3 +473,135 @@ TEST(BVS, EasyTest) {
   SafeTick(cpu);
   EXPECT_EQ(cpu.PC, 0x0600);
 }
+
+TEST(JMP, Absolute) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    test:
+    INX
+    CPX #$03
+    BEQ finish
+    JMP test
+
+    finish:
+    LDA #$80
+   */
+  uint8_t tmp[] = {
+    0xe8,
+    0xe0, 0x03,
+    0xf0, 0x03,
+    0x4c, 0x00, 0x06,
+
+    0xa9, 0x80,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0600);
+
+  while (cpu.A != 0x80) {
+    SafeTick(cpu);
+  }
+}
+
+TEST(JMP, Indirect) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    test:
+    INX
+    CPX #$03
+    BEQ finish
+    LDA #$00
+    STA $00
+    LDA #$06
+    STA $01
+    JMP ($0000)
+
+    finish:
+    LDA #$80
+   */
+  uint8_t tmp[] = {
+    0xe8,
+    0xe0, 0x03,
+    0xf0, 0x0b,
+    0xa9, 0x00,
+    0x85, 0x00,
+    0xa9, 0x06,
+    0x85, 0x01,
+    0x6c, 0x00, 0x00,
+
+    0xa9, 0x80,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 8; ++i) {
+    SafeTick(cpu);
+  }
+  EXPECT_EQ(cpu.PC, 0x0600);
+}
+
+TEST(JMP, Indirect2) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    test:
+    INX
+    CPX #$03
+    BEQ finish
+    LDA #$00
+    STA $FF
+    LDA #$06
+    STA $00
+    JMP ($00FF)
+
+    finish:
+    LDA #$80
+   */
+  uint8_t tmp[] = {
+    0xe8,
+    0xe0, 0x03,
+    0xf0, 0x0b,
+    0xa9, 0x00,
+    0x85, 0xff,
+    0xa9, 0x06,
+    0x85, 0x00,
+    0x6c, 0xff, 0x00,
+
+    0xa9, 0x80,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 8; ++i) {
+    SafeTick(cpu);
+  }
+  EXPECT_EQ(cpu.PC, 0x0600);
+}

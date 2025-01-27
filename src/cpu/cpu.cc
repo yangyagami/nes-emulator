@@ -81,6 +81,19 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
       result = ZeroPageAdd(Y);
       break;
     }
+    case kIndirect: {
+      uint16_t addr = bus_.CpuRead16Bit(PC + 1);
+      uint8_t low = bus_.CpuRead8Bit(addr);
+      uint8_t hi;
+      if ((addr & 0xFF) == 0xFF) {
+        // See https://www.nesdev.org/wiki/Instruction_reference#JMP
+        hi = bus_.CpuRead8Bit((addr & 0xFF00));
+      } else {
+        hi = bus_.CpuRead8Bit(addr + 1);
+      }
+      result = (hi << 8) | low;
+      break;
+    }
     case kIndexedIndirect: {
       uint16_t addr = (PC + 1);
       uint8_t tmp = bus_.CpuRead8Bit(addr);
@@ -342,6 +355,14 @@ void Cpu::INX(AddressingMode addressing) {
 
 void Cpu::INY(AddressingMode addressing) {
   Increment(&Y, 1);
+}
+
+void Cpu::JMP(AddressingMode addressing) {
+  /*
+    Unfortunately, because of a CPU bug, if this 2-byte variable has an address ending in $FF and thus crosses a page, then the CPU fails to increment the page when reading the second byte and thus reads the wrong address. For example, JMP ($03FF) reads $03FF and $0300 instead of $0400. Care should be taken to ensure this variable does not cross a page.
+   */
+  PC = GetAddress(addressing);
+  jumped_ = true;
 }
 
 void Cpu::LDA(AddressingMode addressing) {

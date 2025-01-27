@@ -110,6 +110,8 @@ struct Cpu {
   void INX(AddressingMode addressing);
   void INY(AddressingMode addressing);
 
+  void JMP(AddressingMode addressing);
+
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
   void LDY(AddressingMode addressing);
@@ -300,6 +302,11 @@ struct Cpu {
                0xE8, 1, 2, &Cpu::INX),
     NES_OPCODE("INY", kImplicit,
                0xC8, 1, 2, &Cpu::INY),
+
+    NES_OPCODE("JMP", kAbsolute,
+               0x4C, 3, 3, &Cpu::JMP),
+    NES_OPCODE("JMP", kIndirect,
+               0x6C, 3, 5, &Cpu::JMP),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
