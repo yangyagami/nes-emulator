@@ -1,4 +1,4 @@
-TEST(CMP, Immediate) {
+Test(CMP, Immediate) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*

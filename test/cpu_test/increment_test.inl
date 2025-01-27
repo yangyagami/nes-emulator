@@ -98,4 +98,19 @@ TEST(DEC, ZeroPageX) {
   SafeTick(cpu);
   EXPECT_EQ(memory[0x01], 0xFF);
   EXPECT_EQ(cpu.P.raw, 0b10110000);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x01], 0xFE);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x01], 0x1f);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x01], 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
 }
