@@ -329,6 +329,13 @@ void Cpu::EOR(AddressingMode addressing) {
   UpdateZeroAndNegativeFlag(A);
 }
 
+void Cpu::INC(AddressingMode addressing) {
+  uint16_t addr = GetAddress(addressing);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+  Increment(&m, 1);
+  bus_.CpuWrite8Bit(addr, m);
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }

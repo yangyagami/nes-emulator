@@ -106,6 +106,8 @@ struct Cpu {
 
   void EOR(AddressingMode addressing);
 
+  void INC(AddressingMode addressing);
+
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
   void LDY(AddressingMode addressing);
@@ -283,6 +285,11 @@ struct Cpu {
                0x41, 2, 6, &Cpu::EOR),
     NES_OPCODE("EOR", kIndirectIndexed,
                0x51, 2, 5, &Cpu::EOR),
+
+    NES_OPCODE("INC", kZeroPage,
+               0xE6, 2, 5, &Cpu::INC),
+    NES_OPCODE("INC", kZeroPageX,
+               0xF6, 2, 6, &Cpu::INC),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),

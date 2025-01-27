@@ -277,3 +277,71 @@ TEST(Decrement, Registers) {
   EXPECT_EQ(cpu.Y, 0x00);
   EXPECT_EQ(cpu.P.raw, 0b00110010);
 }
+
+TEST(INC, ZeroPage) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    test:
+    INC $00
+    LDA $00
+    CMP #$FF
+    BNE test
+   */
+  uint8_t tmp[] = {
+    0xe6, 0x00,
+    0xa5, 0x00,
+    0xc9, 0xff,
+    0xd0, 0xf8,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  while (cpu.PC != 0x0608) {
+    SafeTick(cpu);
+  }
+  EXPECT_EQ(cpu.A, 0xFF);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+}
+
+TEST(INC, ZeroPageX) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    LDX #$32
+
+    test:
+    INC $00, X
+    LDA $32
+    CMP #$FF
+    BNE test
+   */
+  uint8_t tmp[] = {
+    0xa2, 0x32,
+
+    0xf6, 0x00,
+    0xa5, 0x32,
+    0xc9, 0xff,
+    0xd0, 0xf8,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  while (cpu.PC != 0x060A) {
+    SafeTick(cpu);
+  }
+  EXPECT_EQ(cpu.A, 0xFF);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+}
