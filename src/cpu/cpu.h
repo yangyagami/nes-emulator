@@ -111,6 +111,7 @@ struct Cpu {
   void INY(AddressingMode addressing);
 
   void JMP(AddressingMode addressing);
+  void JSR(AddressingMode addressing);
 
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
@@ -119,6 +120,8 @@ struct Cpu {
   void PHA(AddressingMode addressing);
   void PHP(AddressingMode addressing);
   void PLA(AddressingMode addressing);
+
+  void RTS(AddressingMode addressing);
 
   void SEC(AddressingMode addressing);
   void SED(AddressingMode addressing);
@@ -307,6 +310,8 @@ struct Cpu {
                0x4C, 3, 3, &Cpu::JMP),
     NES_OPCODE("JMP", kIndirect,
                0x6C, 3, 5, &Cpu::JMP),
+    NES_OPCODE("JSR", kAbsolute,
+               0x20, 3, 6, &Cpu::JSR),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
@@ -353,6 +358,9 @@ struct Cpu {
                0x08, 1, 3, &Cpu::PHP),
     NES_OPCODE("PLA", kImplicit,
                0x68, 1, 4, &Cpu::PLA),
+
+    NES_OPCODE("RTS", kImplicit,
+               0x60, 1, 6, &Cpu::RTS),
 
     NES_OPCODE("STA", kZeroPage,
                0x85, 2, 3, &Cpu::STA),

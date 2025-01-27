@@ -751,6 +751,71 @@ TEST(EOR, kIndirectIndexed) {
   EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
+TEST(JSR, All) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    JSR init
+    JSR loop
+    JSR end
+
+    init:
+    LDX #$00
+    RTS
+
+    loop:
+    INX
+    CPX #$05
+    BNE loop
+    RTS
+
+    end:
+    BRK
+   */
+  uint8_t tmp[] = {
+    0x20, 0x09, 0x06,
+    0x20, 0x0c, 0x06,
+    0x20, 0x12, 0x06,
+
+    0xa2, 0x00,
+    0x60,
+
+    0xe8,
+    0xe0, 0x05,
+    0xd0, 0xfb,
+    0x60,
+
+    0x00,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0609);
+
+  // init
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x0603);
+
+  // loop
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.PC, 0x060c);
+
+  while (cpu.PC != 0x0612) {
+    SafeTick(cpu);
+  }
+  EXPECT_EQ(cpu.PC, 0x0612);
+
+}
+
 TEST(Stack, PHA) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 

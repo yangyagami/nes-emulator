@@ -365,6 +365,18 @@ void Cpu::JMP(AddressingMode addressing) {
   jumped_ = true;
 }
 
+void Cpu::JSR(AddressingMode addressing) {
+  uint16_t new_pc = GetAddress(addressing);
+  uint16_t next_pc = PC + 2;
+
+  Push((next_pc & 0xFF));
+  Push((next_pc >> 8));
+
+  PC = new_pc;
+
+  jumped_ = true;
+}
+
 void Cpu::LDA(AddressingMode addressing) {
   LoadToReg(A, addressing);
 }
@@ -392,6 +404,16 @@ void Cpu::PLA(AddressingMode addressing) {
   A = Pop();
 
   UpdateZeroAndNegativeFlag(A);
+}
+
+void Cpu::RTS(AddressingMode addressing) {
+  (void) addressing;
+  uint8_t hi = Pop();
+  uint8_t low = Pop();
+  uint16_t new_pc = ((hi << 8) | low);
+  PC = new_pc + 1;
+
+  jumped_ = true;
 }
 
 void Cpu::SEC(AddressingMode addressing) {
