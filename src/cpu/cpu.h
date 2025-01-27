@@ -273,6 +273,8 @@ struct Cpu {
                0x45, 2, 3, &Cpu::EOR),
     NES_OPCODE("EOR", kZeroPageX,
                0x55, 2, 4, &Cpu::EOR),
+    NES_OPCODE("EOR", kAbsolute,
+               0x4D, 3, 4, &Cpu::EOR),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
