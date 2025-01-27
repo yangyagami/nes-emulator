@@ -162,6 +162,12 @@ void Cpu::Compare(AddressingMode addressing, uint8_t reg) {
   P.CARRY = (reg >= m);
 }
 
+void Cpu::Increment(uint8_t *target, int value) {
+  *target += value;
+
+  UpdateZeroAndNegativeFlag(*target);
+}
+
 // Instructions
 void Cpu::ADC(AddressingMode addressing) {
   uint16_t addr = GetAddress(addressing);
@@ -301,10 +307,16 @@ void Cpu::CPY(AddressingMode addressing) {
 void Cpu::DEC(AddressingMode addressing) {
   uint16_t addr = GetAddress(addressing);
   uint8_t m = bus_.CpuRead8Bit(addr);
-  m -= 1;
+  Increment(&m, -1);
   bus_.CpuWrite8Bit(addr, m);
+}
 
-  UpdateZeroAndNegativeFlag(m);
+void Cpu::DEX(AddressingMode addressing) {
+  Increment(&X, -1);
+}
+
+void Cpu::DEY(AddressingMode addressing) {
+  Increment(&Y, -1);
 }
 
 void Cpu::LDA(AddressingMode addressing) {

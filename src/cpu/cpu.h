@@ -74,6 +74,7 @@ struct Cpu {
   void UpdateCarryFlag(int16_t result);
   void BranchIf(AddressingMode addressing, bool condition);
   void Compare(AddressingMode addressing, uint8_t reg);
+  void Increment(uint8_t *target, int value);
 
   // Instructions
   void ADC(AddressingMode addressing);
@@ -100,6 +101,8 @@ struct Cpu {
   void CPY(AddressingMode addressing);
 
   void DEC(AddressingMode addressing);
+  void DEX(AddressingMode addressing);
+  void DEY(AddressingMode addressing);
 
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
@@ -257,6 +260,10 @@ struct Cpu {
                0xCE, 3, 6, &Cpu::DEC),
     NES_OPCODE("DEC", kAbsoluteX,
                0xDE, 3, 7, &Cpu::DEC),
+    NES_OPCODE("DEX", kImplicit,
+               0xCA, 1, 2, &Cpu::DEX),
+    NES_OPCODE("DEY", kImplicit,
+               0x88, 1, 2, &Cpu::DEY),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
