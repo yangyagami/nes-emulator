@@ -539,6 +539,218 @@ TEST(EOR, kAbsolute) {
   EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
+TEST(EOR, kAbsoluteX) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDX #$00
+    EOR $2136, X
+
+    LDA #$FF
+    STA $2136
+
+    LDA #$00
+    EOR $2136, X
+   */
+  uint8_t tmp[] = {
+    0xa2, 0x00,
+    0x5d, 0x36, 0x21,
+
+    0xa9, 0xff,
+    0x8d, 0x36, 0x21,
+
+    0xa9, 0x00,
+    0x5d, 0x36, 0x21,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xFF);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
+TEST(EOR, kAbsoluteY) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDY #$00
+    EOR $2136, Y
+
+    LDA #$FF
+    STA $2136
+
+    LDA #$00
+    EOR $2136, Y
+   */
+  uint8_t tmp[] = {
+    0xa0, 0x00,
+    0x59, 0x36, 0x21,
+
+    0xa9, 0xff,
+    0x8d, 0x36, 0x21,
+
+    0xa9, 0x00,
+    0x59, 0x36, 0x21
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xFF);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
+TEST(EOR, kIndexedIndirect) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDA #$36
+    STA $00
+    LDA #$21
+    STA $01
+
+    EOR ($00, X)
+
+    LDA #$FF
+    STA $2136
+
+    LDA #$00
+    EOR ($00, X)
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x36,
+    0x85, 0x00,
+    0xa9, 0x21,
+    0x85, 0x01,
+
+    0x41, 0x00,
+
+    0xa9, 0xff,
+    0x8d, 0x36, 0x21,
+
+    0xa9, 0x00,
+    0x41, 0x00,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 4; ++i) {
+    SafeTick(cpu);
+  }
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x00], 0x36);
+  EXPECT_EQ(memory[0x01], 0x21);
+  EXPECT_EQ(cpu.A, 0x21);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xFF);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
+TEST(EOR, kIndirectIndexed) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDA #$02
+    STA $00
+    LDA #$00
+    STA $01
+
+    LDY #$1
+
+    EOR ($00), Y
+
+    LDA #$FF
+    STA $0003
+
+    LDA #$00
+    EOR ($00), Y
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x02,
+    0x85, 0x00,
+    0xa9, 0x00,
+    0x85, 0x01,
+
+    0xa0, 0x01,
+
+    0x51, 0x00,
+
+    0xa9, 0xff,
+    0x8d, 0x03, 0x00,
+
+    0xa9, 0x00,
+    0x51, 0x00,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 5; ++i) {
+    SafeTick(cpu);
+  }
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xFF);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
 TEST(Stack, PHA) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 
