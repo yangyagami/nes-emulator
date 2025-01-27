@@ -172,3 +172,61 @@ TEST(DEC, Absolute) {
   EXPECT_EQ(memory[0x2222], 0x00);
   EXPECT_EQ(cpu.P.raw, 0b00110010);
 }
+
+TEST(DEC, AbsoluteX) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    LDX #$01
+
+    DEC $2221, X
+    DEC $2221, X
+
+    LDA #$20
+    STA $2222
+    DEC $2221, X
+
+    LDA #$01
+    STA $2221, X
+    DEC $2221, X
+   */
+  uint8_t tmp[] = {
+    0xa2, 0x01,
+    0xde, 0x21, 0x22,
+    0xde, 0x21, 0x22,
+
+    0xa9, 0x20,
+    0x8d, 0x22, 0x22,
+    0xde, 0x21, 0x22,
+
+    0xa9, 0x01,
+    0x9d, 0x21, 0x22,
+    0xde, 0x21, 0x22,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x2222], 0xFE);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x2222], 0x1f);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x2222], 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110010);
+}

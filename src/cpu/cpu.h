@@ -255,6 +255,8 @@ struct Cpu {
                0xD6, 2, 6, &Cpu::DEC),
     NES_OPCODE("DEC", kAbsolute,
                0xCE, 3, 6, &Cpu::DEC),
+    NES_OPCODE("DEC", kAbsoluteX,
+               0xDE, 3, 7, &Cpu::DEC),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
