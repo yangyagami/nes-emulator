@@ -104,6 +104,8 @@ struct Cpu {
   void DEX(AddressingMode addressing);
   void DEY(AddressingMode addressing);
 
+  void EOR(AddressingMode addressing);
+
   void LDA(AddressingMode addressing);
   void LDX(AddressingMode addressing);
   void LDY(AddressingMode addressing);
@@ -264,6 +266,9 @@ struct Cpu {
                0xCA, 1, 2, &Cpu::DEX),
     NES_OPCODE("DEY", kImplicit,
                0x88, 1, 2, &Cpu::DEY),
+
+    NES_OPCODE("EOR", kImmediate,
+               0x49, 2, 2, &Cpu::EOR),
 
     NES_OPCODE("LDA", kImmediate,
                0xA9, 2, 2, &Cpu::LDA),
