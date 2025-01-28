@@ -360,6 +360,10 @@ struct Cpu {
                0x46, 2, 5, &Cpu::LSR),
     NES_OPCODE("LSR", kZeroPageX,
                0x56, 2, 6, &Cpu::LSR),
+    NES_OPCODE("LSR", kAbsolute,
+               0x4E, 3, 6, &Cpu::LSR),
+    NES_OPCODE("LSR", kAbsoluteX,
+               0x5E, 3, 7, &Cpu::LSR),
 
     NES_OPCODE("NOP", kImplicit,
                0xEA, 1, 2, &Cpu::NOP),
