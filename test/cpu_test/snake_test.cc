@@ -351,6 +351,13 @@ int main() {
     for (int i = 0; i < 120; ++i) {
       cpu.Tick();
       while (--cpu.cycles > 0);
+
+      if (cpu.PC == 0x0735) { // GameOver
+        cpu.Reset();
+        cpu.PC = 0x0600;
+        std::fill_n(memory.begin() + 0x0200, 0x05ff - 0x0200 + 1, 0);
+        break;
+      }
     }
 
     BeginDrawing();
