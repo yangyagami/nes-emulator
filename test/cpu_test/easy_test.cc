@@ -1538,6 +1538,29 @@ TEST(SBC, test) {
   EXPECT_EQ(cpu.P.raw, 0b00110001);
 }
 
+TEST(SBC, test2) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+  */
+  uint8_t tmp[] = {
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 5; ++i) {
+    SafeTick(cpu);
+  }
+}
+
 TEST(STA, STA) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 
