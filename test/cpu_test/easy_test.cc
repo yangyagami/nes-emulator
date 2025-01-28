@@ -7,7 +7,7 @@
 #include "gtest/gtest.h"
 
 #include "cpu/cpu.h"
-#include "bus/bus.h"
+#include "bus.h"
 
 void SafeTick(nes::Cpu &cpu) {
   cpu.Tick();

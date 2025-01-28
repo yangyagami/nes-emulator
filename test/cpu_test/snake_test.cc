@@ -282,7 +282,7 @@
 #include "raylib.h"
 
 #include "cpu/cpu.h"
-#include "bus/bus.h"
+#include "../cpu_test/bus.h"
 
 int main() {
   std::array<uint8_t, 0x10000> memory = { 0 };
