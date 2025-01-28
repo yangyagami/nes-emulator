@@ -1516,6 +1516,26 @@ TEST(SBC, test) {
   SafeTick(cpu);
   EXPECT_EQ(cpu.A, 0xFF);
   EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xF4);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x10);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x11);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
 }
 
 TEST(STA, STA) {
