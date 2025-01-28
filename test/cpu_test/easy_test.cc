@@ -1508,6 +1508,14 @@ TEST(SBC, test) {
 
   SafeTick(cpu);
   SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b01110011);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xFF);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
 TEST(STA, STA) {

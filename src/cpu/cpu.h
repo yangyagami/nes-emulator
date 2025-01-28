@@ -134,6 +134,7 @@ struct Cpu {
   void STA(AddressingMode addressing);
   void STX(AddressingMode addressing);
   void STY(AddressingMode addressing);
+  void SBC(AddressingMode addressing);
 
   void TAX(AddressingMode addressing);
   void TAY(AddressingMode addressing);
@@ -399,6 +400,10 @@ struct Cpu {
     NES_OPCODE("RTS", kImplicit,
                0x60, 1, 6, &Cpu::RTS),
 
+    NES_OPCODE("SBC", kImmediate,
+               0xE9, 2, 2, &Cpu::SBC),
+    NES_OPCODE("SBC", kZeroPage,
+               0xE5, 2, 3, &Cpu::SBC),
     NES_OPCODE("STA", kZeroPage,
                0x85, 2, 3, &Cpu::STA),
     NES_OPCODE("STA", kZeroPageX,

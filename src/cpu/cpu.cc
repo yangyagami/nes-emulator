@@ -325,10 +325,12 @@ void Cpu::DEC(AddressingMode addressing) {
 }
 
 void Cpu::DEX(AddressingMode addressing) {
+  (void) addressing;
   Increment(&X, -1);
 }
 
 void Cpu::DEY(AddressingMode addressing) {
+  (void) addressing;
   Increment(&Y, -1);
 }
 
@@ -350,10 +352,12 @@ void Cpu::INC(AddressingMode addressing) {
 }
 
 void Cpu::INX(AddressingMode addressing) {
+  (void) addressing;
   Increment(&X, 1);
 }
 
 void Cpu::INY(AddressingMode addressing) {
+  (void) addressing;
   Increment(&Y, 1);
 }
 
@@ -477,6 +481,19 @@ void Cpu::STX(AddressingMode addressing) {
 void Cpu::STY(AddressingMode addressing) {
   (void) addressing;
   StoreToMem(Y, addressing);
+}
+
+void Cpu::SBC(AddressingMode addressing) {
+  uint16_t addr = GetAddress(addressing);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+
+  uint8_t pre_a = A;
+  int16_t result = A - m - ((~P.CARRY) & 0x01);
+  A = result;
+
+  UpdateZeroAndNegativeFlag(A);
+  UpdateOverflowFlag(pre_a, ~m, A);
+  P.CARRY = ~static_cast<uint8_t>(result < 0x00);
 }
 
 void Cpu::TAX(AddressingMode addressing) {
