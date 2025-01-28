@@ -8,7 +8,19 @@
 
 namespace nes {
 
-class Cartridge {
+struct Cartridge {
+  // See https://www.nesdev.org/wiki/INES#Flags_6
+  union {
+    struct {
+      uint8_t NAMETABLE_ARRANGEMENT : 1;
+      uint8_t PRG_RAM : 1;
+      uint8_t TRAINER : 1;
+      uint8_t ALTERNATIVE_NAMETABLE : 1;
+      uint8_t MAPPER_NUMBER : 4;
+    };
+    uint8_t raw;
+  } Flags6;
+
  public:
   class NoSuchFileException : public std::exception {
    public:

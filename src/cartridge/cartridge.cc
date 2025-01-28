@@ -26,6 +26,18 @@ Cartridge::Cartridge(const std::string &path, std::array<uint8_t, 0x10000> &memo
 
   int prg_rom_size = content[4];
   int chr_rom_size = content[5];
+
+  Flags6.raw = content[6];
+
+  // Skip header
+  int offset = 16;
+  if (Flags6.TRAINER) {
+    offset += 512;
+  }
+  std::copy(content.begin() + offset,
+            content.begin() + offset + 16384 * prg_rom_size,
+            memory.begin() + 0x8000);
+
 }
 
 }  // namespace nes
