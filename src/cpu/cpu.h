@@ -120,6 +120,8 @@ struct Cpu {
 
   void NOP(AddressingMode addressing);
 
+  void ORA(AddressingMode addressing);
+
   void PHA(AddressingMode addressing);
   void PHP(AddressingMode addressing);
   void PLA(AddressingMode addressing);
@@ -367,6 +369,25 @@ struct Cpu {
 
     NES_OPCODE("NOP", kImplicit,
                0xEA, 1, 2, &Cpu::NOP),
+
+    NES_OPCODE("ORA", kImmediate,
+               0x09, 2, 2, &Cpu::ORA),
+    NES_OPCODE("ORA", kZeroPage,
+               0x05, 2, 3, &Cpu::ORA),
+    NES_OPCODE("ORA", kZeroPageX,
+               0x15, 2, 4, &Cpu::ORA),
+    NES_OPCODE("ORA", kAbsolute,
+               0x0D, 3, 4, &Cpu::ORA),
+    NES_OPCODE("ORA", kAbsolute,
+               0x0D, 3, 4, &Cpu::ORA),
+    NES_OPCODE("ORA", kAbsoluteX,
+               0x1D, 3, 4, &Cpu::ORA),
+    NES_OPCODE("ORA", kAbsoluteY,
+               0x19, 3, 4, &Cpu::ORA),
+    NES_OPCODE("ORA", kIndexedIndirect,
+               0x01, 2, 6, &Cpu::ORA),
+    NES_OPCODE("ORA", kIndirectIndexed,
+               0x11, 2, 5, &Cpu::ORA),
 
     NES_OPCODE("PHA", kImplicit,
                0x48, 1, 3, &Cpu::PHA),

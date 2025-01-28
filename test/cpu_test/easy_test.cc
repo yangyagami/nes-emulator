@@ -1177,6 +1177,112 @@ TEST(LSR, AbsoluteX) {
   EXPECT_EQ(cpu.P.raw, 0b00110001);
 }
 
+TEST(ORA, All) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    LDX #$02
+    STX $1200
+    STX $20
+
+    LDX #$01
+    LDY #$01
+
+    LDA #$00
+    ORA #$02
+
+    LDA #$02
+    ORA #$02
+
+    ORA $20
+    ORA $1f, X
+
+    ORA $1200
+    ORA $11ff, X
+    ORA $11ff, Y
+
+    LDA #$12
+    STA $02
+    ORA ($00, X)
+    LDY #$00
+    ORA ($01), Y
+
+    ORA #$FF
+   */
+  uint8_t tmp[] = {
+    0xa2, 0x02,
+    0x8e, 0x00, 0x12,
+    0x86, 0x20,
+
+    0xa2, 0x01,
+    0xa0, 0x01,
+
+    0xa9, 0x00,
+    0x09, 0x02,
+
+    0xa9, 0x02,
+    0x09, 0x02,
+
+    0x05, 0x20,
+    0x15, 0x1f,
+
+    0x0d, 0x00, 0x12,
+    0x1d, 0xff, 0x11,
+    0x19, 0xff, 0x11,
+
+    0xa9, 0x12,
+    0x85, 0x02,
+    0x01, 0x00,
+    0xa0, 0x00,
+    0x11, 0x01,
+
+    0x09, 0xFF,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 5; ++i) {
+    SafeTick(cpu);
+  }
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x02);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x02);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x02);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x02);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  for (int i = 0; i < 5; ++i) {
+    SafeTick(cpu);
+  }
+  EXPECT_EQ(cpu.A, 0x12);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0xFF);
+  EXPECT_EQ(cpu.P.raw, 0b10110000);
+}
+
 TEST(Stack, PHA) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 

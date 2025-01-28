@@ -414,6 +414,14 @@ void Cpu::NOP(AddressingMode addressing) {
   (void) addressing;
 }
 
+void Cpu::ORA(AddressingMode addressing) {
+  uint16_t addr = GetAddress(addressing);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+  A |= m;
+
+  UpdateZeroAndNegativeFlag(A);
+}
+
 void Cpu::PHA(AddressingMode addressing) {
   (void) addressing;  // Not used
   Push(A);
