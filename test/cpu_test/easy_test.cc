@@ -875,6 +875,77 @@ TEST(LSR, Implicit) {
   EXPECT_EQ(cpu.P.raw, 0b00110001);
 }
 
+TEST(LSR, ZeroPage) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    LDA #$01
+    STA $22
+    LSR $22
+
+    LDA #$30
+    STA $22
+    LSR $22
+
+    LDA #$FF
+    STA $22
+    LSR $22
+
+    LDA #$8F
+    STA $22
+    LSR $22
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x01,
+    0x85, 0x22,
+    0x46, 0x22,
+
+    0xa9, 0x30,
+    0x85, 0x22,
+    0x46, 0x22,
+
+    0xa9, 0xff,
+    0x85, 0x22,
+    0x46, 0x22,
+
+    0xa9, 0x8f,
+    0x85, 0x22,
+    0x46, 0x22,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x22], 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x22], 0x18);
+  EXPECT_EQ(cpu.P.raw, 0b00110000);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x22], 0x7F);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x22], 0x47);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
+}
+
 TEST(Stack, PHA) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 

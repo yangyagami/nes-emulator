@@ -390,11 +390,24 @@ void Cpu::LDY(AddressingMode addressing) {
 }
 
 void Cpu::LSR(AddressingMode addressing) {
+  uint8_t target;
+
+  auto func = [this, &target](uint8_t *v){
+    P.CARRY = (*v & 0x01);
+    *v >>= 1;
+    target = *v;
+  };
+
   if (addressing == kImplicit) {
-    P.CARRY = (A & 0x01);
-    A >>= 1;
-    UpdateZeroAndNegativeFlag(A);
+    func(&A);
+  } else {
+    uint16_t addr = GetAddress(addressing);
+    uint8_t m = bus_.CpuRead8Bit(addr);
+    func(&m);
+    bus_.CpuWrite8Bit(addr, m);
   }
+
+  UpdateZeroAndNegativeFlag(target);
 }
 
 void Cpu::NOP(AddressingMode addressing) {
