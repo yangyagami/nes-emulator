@@ -1429,6 +1429,87 @@ TEST(Stack, PLA) {
   EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
+TEST(SBC, test) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    init:
+    LDX #$F0
+    LDY #$E0
+    LDA #$11
+    STA $00F2
+    STA $00E2
+
+    overflow:
+    LDA #$80
+    SBC #$7f
+    ;; A=$00 P=0b01110011
+
+    negative:
+    CLC
+    LDA #$11
+    SBC $F2
+
+    zero_carry:
+    SEC
+    LDA #$11
+    SBC $02, X
+
+    carry_clear:
+    LDA #$05
+    SBC $00F2
+
+    only_carry:
+    LDA #$22
+    SBC $0002, X
+    LDA #$22
+    SBC $0002, Y
+  */
+  uint8_t tmp[] = {
+    0xa2, 0xf0,
+    0xa0, 0xe0,
+    0xa9, 0x11,
+    0x8d, 0xf2, 0x00,
+    0x8d, 0xe2, 0x00,
+
+    0xa9, 0x80,
+    0xe9, 0x7f,
+
+    0x18,
+    0xa9, 0x11,
+    0xe5, 0xf2,
+
+    0x38,
+    0xa9, 0x11,
+    0xf5, 0x02,
+
+    0xa9, 0x05,
+    0xed, 0xf2, 0x00,
+
+    0xa9, 0x22,
+    0xfd, 0x02, 0x00,
+    0xa9, 0x22,
+    0xf9, 0x02, 0x00,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 5; ++i) {
+    SafeTick(cpu);
+  }
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+}
+
 TEST(STA, STA) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 
