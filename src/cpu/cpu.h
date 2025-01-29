@@ -126,6 +126,7 @@ struct Cpu {
   void PHP(AddressingMode addressing);
   void PLA(AddressingMode addressing);
 
+  void RTI(AddressingMode addressing);
   void RTS(AddressingMode addressing);
 
   void SEC(AddressingMode addressing);
@@ -397,6 +398,8 @@ struct Cpu {
     NES_OPCODE("PLA", kImplicit,
                0x68, 1, 4, &Cpu::PLA),
 
+    NES_OPCODE("RTI", kImplicit,
+               0x40, 1, 6, &Cpu::RTI),
     NES_OPCODE("RTS", kImplicit,
                0x60, 1, 6, &Cpu::RTS),
 

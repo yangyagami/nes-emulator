@@ -443,6 +443,20 @@ void Cpu::PLA(AddressingMode addressing) {
   UpdateZeroAndNegativeFlag(A);
 }
 
+void Cpu::RTI(AddressingMode addressing) {
+  Status old = P;
+  P.raw = Pop();
+  P.UNUSED = old.UNUSED;
+  P.B = old.B;
+
+  uint8_t hi = Pop();
+  uint8_t low = Pop();
+
+  PC = ((hi << 8) | low);
+
+  jumped_ = true;
+}
+
 void Cpu::RTS(AddressingMode addressing) {
   (void) addressing;
   uint8_t hi = Pop();
