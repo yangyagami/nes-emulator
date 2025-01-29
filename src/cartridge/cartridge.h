@@ -1,6 +1,7 @@
 #ifndef NES_EMULATOR_CARTRIDGE_CARTRIDGE_H_
 #define NES_EMULATOR_CARTRIDGE_CARTRIDGE_H_
 
+#include <vector>
 #include <array>
 #include <string>
 #include <cstdint>
@@ -20,6 +21,9 @@ struct Cartridge {
     };
     uint8_t raw;
   } Flags6;
+
+  std::vector<uint8_t> prg_rom;
+  std::vector<uint8_t> chr_rom;
 
  public:
   class NoSuchFileException : public std::exception {
@@ -48,7 +52,7 @@ struct Cartridge {
     std::string msg_;
   };
 
-  Cartridge(const std::string &path, std::array<uint8_t, 0x10000> &memory);
+  Cartridge(const std::string &path);
 };
 
 }  // namespace nes

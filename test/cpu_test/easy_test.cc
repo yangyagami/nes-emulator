@@ -1538,12 +1538,34 @@ TEST(SBC, test) {
   EXPECT_EQ(cpu.P.raw, 0b00110001);
 }
 
-TEST(SBC, test2) {
+TEST(SBC, IndexedIndirect) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 
   /*
+    LDA #$01
+    STA $20
+    LDA #$02
+    STA $21
+
+    LDA #$12
+    STA $0201
+
+    LDA #$20
+    LDX #$10
+    SBC ($10, X)
   */
   uint8_t tmp[] = {
+    0xa9, 0x01,
+    0x85, 0x20,
+    0xa9, 0x02,
+    0x85, 0x21,
+
+    0xa9, 0x12,
+    0x8d, 0x01, 0x02,
+
+    0xa9, 0x20,
+    0xa2, 0x10,
+    0xe1, 0x10,
   };
 
   for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
@@ -1556,9 +1578,11 @@ TEST(SBC, test2) {
   cpu.Reset();
   cpu.PC = 0x0600;
 
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < 9; ++i) {
     SafeTick(cpu);
   }
+  EXPECT_EQ(cpu.A, 0x0d);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
 }
 
 TEST(STA, STA) {

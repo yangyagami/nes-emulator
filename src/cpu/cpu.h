@@ -412,6 +412,8 @@ struct Cpu {
                0xFD, 3, 4, &Cpu::SBC),
     NES_OPCODE("SBC", kAbsoluteY,
                0xF9, 3, 4, &Cpu::SBC),
+    NES_OPCODE("SBC", kIndexedIndirect,
+               0xE1, 2, 6, &Cpu::SBC),
     NES_OPCODE("STA", kZeroPage,
                0x85, 2, 3, &Cpu::STA),
     NES_OPCODE("STA", kZeroPageX,

@@ -4,11 +4,15 @@
 #include <array>
 #include <cassert>
 
+#include "cartridge/cartridge.h"
+
 namespace nes {
-Bus::Bus(std::array<uint8_t, 0x0800> &memory) : memory_(memory) {}
+Bus::Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge)
+    : memory_(memory), cartridge_(cartridge) {
+}
 
 void Bus::CpuWrite8Bit(uint16_t address, uint8_t value) {
-  if (address >= 0 && address <= 0x0FFF) {
+  if (address <= 0x0FFF) {
     memory_[address - 0x0800] = value;
   } else if (address >= 0x1000 && address <= 0x17FF) {
     memory_[address - 0x1000] = value;
@@ -25,7 +29,7 @@ void Bus::CpuWrite16Bit(uint16_t address, uint16_t value) {
 }
 
 uint8_t Bus::CpuRead8Bit(uint16_t address) {
-  if (address >= 0 && address <= 0x0FFF) {
+  if (address <= 0x0FFF) {
     return memory_[address - 0x0800];
   } else if (address >= 0x1000 && address <= 0x17FF) {
     return memory_[address - 0x1000];

@@ -1,5 +1,6 @@
 #include "cartridge.h"
 
+#include <vector>
 #include <array>
 #include <string>
 #include <fstream>
@@ -7,7 +8,7 @@
 
 namespace nes {
 
-Cartridge::Cartridge(const std::string &path, std::array<uint8_t, 0x10000> &memory) {
+Cartridge::Cartridge(const std::string &path) {
   std::ifstream ifs;
   ifs.open(path);
 
@@ -34,9 +35,19 @@ Cartridge::Cartridge(const std::string &path, std::array<uint8_t, 0x10000> &memo
   if (Flags6.TRAINER) {
     offset += 512;
   }
+
+  prg_rom.resize(prg_rom_size * 16384);
+  chr_rom.resize(chr_rom_size * 8192);
+
   std::copy(content.begin() + offset,
             content.begin() + offset + 16384 * prg_rom_size,
-            memory.begin() + 0x8000);
+            prg_rom.begin());
+
+  offset += 16384 * prg_rom_size;
+
+  std::copy(content.begin() + offset,
+            content.begin() + offset + 8192 * chr_rom_size,
+            chr_rom.begin());
 
 }
 

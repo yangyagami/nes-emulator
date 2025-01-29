@@ -4,8 +4,7 @@
 #include "cartridge/cartridge.h"
 
 int main() {
-  std::array<uint8_t, 0x10000> memory = { 0 };
-  nes::Cartridge cart("snake.nes", memory);
+  nes::Cartridge cart("snake.nes");
 
   return 0;
 }
