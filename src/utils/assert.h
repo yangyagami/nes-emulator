@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <format>
 
 #define nes_assert(condition, msg) \
   do { \

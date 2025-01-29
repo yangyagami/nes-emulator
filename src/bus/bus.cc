@@ -8,8 +8,8 @@
 #include "utils/assert.h"
 
 namespace nes {
-Bus::Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge)
-    : memory_(memory), cartridge_(cartridge) {
+Bus::Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge, PPU &ppu)
+    : memory_(memory), cartridge_(cartridge), ppu_(ppu) {
 }
 
 void Bus::CpuWrite8Bit(uint16_t address, uint8_t value) {
@@ -19,10 +19,16 @@ void Bus::CpuWrite8Bit(uint16_t address, uint8_t value) {
     memory_[address - 0x1000] = value;
   } else if (address >= 0x1800 && address <= 0x1FFF) {
     memory_[address - 0x1800] = value;
+  } else if (address >= 0x2000 && address <= 0x2007) {
+    // PPU
+    ppu_.Write(address, value);
   } else if (address >= 0x4020) {
     // Cartridge
     nes_assert(false, std::format("Unsupported write: {:#x}", address));
   } else {
+    if (address >= memory_.size()) {
+      nes_assert(false, std::format("Out of memory: {:#x}", address));
+    }
     memory_[address] = value;
   }
 }
@@ -61,6 +67,9 @@ uint8_t Bus::CpuRead8Bit(uint16_t address) {
       nes_assert(false, std::format("Unsupported access: {:#x}", address));
     }
   } else {
+    if (address >= memory_.size()) {
+      nes_assert(false, std::format("Out of memory: {:#x}", address));
+    }
     return memory_[address];
   }
 }

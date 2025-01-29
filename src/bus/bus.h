@@ -5,11 +5,12 @@
 #include <cstdint>
 
 #include "cartridge/cartridge.h"
+#include "ppu/ppu.h"
 
 namespace nes {
 class Bus {
  public:
-  Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge);
+  Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge, PPU &ppu);
 
   void CpuWrite8Bit(uint16_t address, uint8_t value);
 
@@ -22,6 +23,7 @@ class Bus {
  private:
   std::array<uint8_t, 0x0800> &memory_;
   Cartridge &cartridge_;
+  PPU &ppu_;
 };
 }  // namespace nes
 

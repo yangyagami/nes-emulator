@@ -7,7 +7,7 @@
 namespace nes {
 
 Machine::Machine(const std::string &path)
-    : bus_(memory_, cartridge_),
+    : bus_(memory_, cartridge_, ppu_),
       cpu_(bus_),
       rom_path_(path) {
 }
@@ -30,6 +30,7 @@ int Machine::Run() {
       for (int i = 0; i < 3; ++i) {
         ppu_.Tick();
       }
+      std::cout << std::format("PC: {:#x}\n", cpu_.PC);
       cpu_.Tick();
       while(--cpu_.cycles > 0);
     }
