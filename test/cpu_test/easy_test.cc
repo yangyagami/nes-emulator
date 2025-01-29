@@ -1585,6 +1585,51 @@ TEST(SBC, IndexedIndirect) {
   EXPECT_EQ(cpu.P.raw, 0b00110001);
 }
 
+TEST(SBC, IndirectIndexed) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+
+  /*
+    LDA #$01
+    STA $20
+    LDA #$02
+    STA $21
+
+    LDA #$12
+    STA $0201
+
+    LDA #$20
+    SBC ($20), Y
+  */
+  uint8_t tmp[] = {
+    0xa9, 0x01,
+    0x85, 0x20,
+    0xa9, 0x02,
+    0x85, 0x21,
+
+    0xa9, 0x12,
+    0x8d, 0x01, 0x02,
+
+    0xa9, 0x20,
+    0xf1, 0x20,
+  };
+
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  for (int i = 0; i < 8; ++i) {
+    SafeTick(cpu);
+  }
+  EXPECT_EQ(cpu.A, 0x0d);
+  EXPECT_EQ(cpu.P.raw, 0b00110001);
+}
+
 TEST(STA, STA) {
   std::array<uint8_t, 0x10000> memory = { 0 };
 
