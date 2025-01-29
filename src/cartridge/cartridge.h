@@ -26,33 +26,7 @@ struct Cartridge {
   std::vector<uint8_t> chr_rom;
 
  public:
-  class NoSuchFileException : public std::exception {
-   public:
-    NoSuchFileException(const std::string &path) {
-      msg_ = std::format("No such file: {}", path);
-    }
-    const char *what() const noexcept override {
-      return msg_.c_str();
-    }
-
-   private:
-    std::string msg_;
-  };
-
-  class InvalidRomException : public std::exception {
-   public:
-    InvalidRomException() {
-      msg_ = "Invalid rom";
-    }
-    const char *what() const noexcept override {
-      return msg_.c_str();
-    }
-
-   private:
-    std::string msg_;
-  };
-
-  Cartridge(const std::string &path);
+  bool LoadRomFile(const std::string &path);
 };
 
 }  // namespace nes
