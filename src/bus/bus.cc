@@ -44,10 +44,14 @@ uint8_t Bus::CpuRead8Bit(uint16_t address) {
     if (address >= 0x8000) {
       if (cartridge_.mapper == 0) {
         // See https://www.nesdev.org/wiki/NROM
-        if (address <= 0xBFFF) {
-          return cartridge_.prg_rom[address - 0x8000];
+        if (cartridge_.prg_rom.size() == 16384) {
+          if (address <= 0xBFFF) {
+            return cartridge_.prg_rom[address - 0x8000];
+          } else {
+            return cartridge_.prg_rom[address - 0xC000];
+          }
         } else {
-          return cartridge_.prg_rom[address - 0xC000];
+          nes_assert(false, std::format("Unsupported NROM-256"));
         }
       } else {
         nes_assert(false, std::format("Unsupported mapper: {:#x}",
