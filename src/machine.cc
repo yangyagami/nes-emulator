@@ -1,5 +1,7 @@
 #include "machine.h"
 
+#include <iostream>
+
 #include "raylib.h"
 
 namespace nes {
@@ -29,6 +31,7 @@ int Machine::Run() {
         ppu_.Tick();
       }
       cpu_.Tick();
+      while(--cpu_.cycles > 0);
     }
     BeginDrawing();
     ClearBackground(BLACK);

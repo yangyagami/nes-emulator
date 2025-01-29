@@ -36,6 +36,8 @@ bool Cartridge::LoadRomFile(const std::string &path) {
   int chr_rom_size = content[5];
 
   Flags6.raw = content[6];
+  Flags7.raw = content[7];
+  mapper = (Flags7.MAPPER_NUMBER << 8) | Flags6.MAPPER_NUMBER;
 
   // Skip header
   int offset = 16;

@@ -22,6 +22,19 @@ struct Cartridge {
     uint8_t raw;
   } Flags6;
 
+  // See https://www.nesdev.org/wiki/INES#Flags_7
+  union {
+    struct {
+      uint8_t VS_UNISYSTEM : 1;
+      uint8_t PLAYCHOICE_10 : 1;
+      uint8_t NES2_0 : 2;
+      uint8_t MAPPER_NUMBER : 4;
+    };
+    uint8_t raw;
+  } Flags7;
+
+  int mapper;
+
   std::vector<uint8_t> prg_rom;
   std::vector<uint8_t> chr_rom;
 
