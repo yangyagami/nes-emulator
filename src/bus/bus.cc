@@ -27,7 +27,7 @@ void Bus::CpuWrite8Bit(uint16_t address, uint8_t value) {
     nes_assert(false, std::format("Unsupported write: {:#x}", address));
   } else {
     if (address >= memory_.size()) {
-      nes_assert(false, std::format("Out of memory: {:#x}", address));
+      nes_assert(false, std::format("Write out of memory: {:#x}", address));
     }
     memory_[address] = value;
   }
@@ -68,7 +68,7 @@ uint8_t Bus::CpuRead8Bit(uint16_t address) {
     }
   } else {
     if (address >= memory_.size()) {
-      nes_assert(false, std::format("Out of memory: {:#x}", address));
+      nes_assert(false, std::format("Read out of memory: {:#x}", address));
     }
     return memory_[address];
   }

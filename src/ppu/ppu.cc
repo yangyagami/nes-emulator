@@ -10,6 +10,10 @@ void PPU::Write(uint16_t addr, uint8_t v) {
       PPUCTRL.raw = v;
       break;
     }
+    case 0x2001: {
+      PPUMASK.raw = v;
+      break;
+    }
     default: {
       nes_assert(false, std::format("Unsupported ppu write: {:#x}\n", addr));
       break;
