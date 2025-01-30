@@ -1,1 +1,1 @@
-includes("cpu_test", "cartridge_test")
+includes("cpu_test", "cartridge_test", "tile_test")

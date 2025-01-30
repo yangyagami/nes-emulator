@@ -10,12 +10,10 @@ void PPU::Write(uint16_t addr, uint8_t v) {
   switch (addr) {
     case 0x2000: {
       PPUCTRL.raw = v;
-      std::cout << std::format("PPUCTRL: {:#x}", PPUCTRL.raw) << std::endl;
       break;
     }
     case 0x2001: {
       PPUMASK.raw = v;
-      std::cout << std::format("PPUMASK: {:#x}", PPUMASK.raw) << std::endl;
       break;
     }
     case 0x2003: {
@@ -23,7 +21,6 @@ void PPU::Write(uint16_t addr, uint8_t v) {
       break;
     }
     case 0x2005: {
-      std::cout << std::format("PPUSCROLL: {:#x}, w: {}", PPUSCROLL, w) << std::endl;
       if (w == 1) {
         PPUSCROLL = v;
         y_scroll_ = PPUSCROLL;
@@ -36,7 +33,6 @@ void PPU::Write(uint16_t addr, uint8_t v) {
       break;
     }
     case 0x2006: {
-      std::cout << std::format("PPUADDR: {:#x}, w: {}", PPUADDR, w) << std::endl;
       if (w == 1) {
         PPUADDR = (PPUADDR << 8) | v;
         w = 0;
@@ -47,7 +43,6 @@ void PPU::Write(uint16_t addr, uint8_t v) {
       break;
     }
     case 0x2007: {
-      std::cout << std::format("PPUADDR: {:#x} PPUDATA: {:#x}", PPUADDR, v) << std::endl;
       if (PPUCTRL.VRAM_ADDR == 0) {
         PPUADDR += 1;
       } else {
