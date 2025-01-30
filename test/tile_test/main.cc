@@ -32,13 +32,28 @@ int main(int argc, char *argv[]) {
     BeginDrawing();
     ClearBackground(BLACK);
 
+    int x = 0;
+    int y = 0;
+    int tiles = 0;
     for (int i = 0; i < cart.chr_rom.size(); i += 16) {
-      uint8_t plane0 = cart.chr_rom[i];
-      uint8_t plane1 = cart.chr_rom[i + 8];
+      for (int j = i; j < i + 8; ++j) {
+        uint8_t plane0 = cart.chr_rom[j];
+        uint8_t plane1 = cart.chr_rom[j + 8];
 
-      for (int j = 7; j >= 0; --j) {
-        uint8_t plane0_bit = (plane0 >> j) & 0x1;
-        uint8_t plane1_bit = (plane1 >> j) & 0x1;
+        for (int k = 7; k >= 0; --k) {
+          uint8_t plane0_bit = (plane0 >> k) & 0x1;
+          uint8_t plane1_bit = (plane1 >> k) & 0x1;
+          uint8_t color_idx = plane0_bit + plane1_bit * 2;
+
+          DrawRectangle(x + (7 - k) * kCellSize, y + (j - i) * kCellSize,
+                        kCellSize, kCellSize, colors[color_idx]);
+        }
+      }
+      tiles++;
+      x += 8 * kCellSize;
+      if (tiles % 16 == 0) {
+        x = 0;
+        y += 8 * kCellSize;
       }
     }
 
