@@ -120,6 +120,9 @@ struct Cpu {
   void LDY(AddressingMode addressing);
   void LSR(AddressingMode addressing);
 
+  // See https://www.nesdev.org/wiki/NMI
+  void NMI();
+
   void NOP(AddressingMode addressing);
 
   void ORA(AddressingMode addressing);

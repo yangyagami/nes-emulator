@@ -17,19 +17,18 @@ Cpu::Cpu(Bus &bus) : bus_(bus) {
 void Cpu::Tick() {
   nes_assert(cycles == 0, std::format("Invalid cycles: {}", cycles));
 
+  jumped_ = false;
+
   // See https://www.nesdev.org/wiki/NMI
   if (nmi_flipflop) {
-    PC = bus_.CpuRead16Bit(0xFFFA);
-    nmi_flipflop = false;
+    NMI();
   }
-
-  jumped_ = false;
 
   // Fetch opcode
   uint8_t opcode = bus_.CpuRead8Bit(PC);
 
   nes_assert(kOpcodes.find(opcode) != kOpcodes.end(),
-             std::format("Invalid opcode: 0x{:02x}", opcode));
+             std::format("Invalid opcode: 0x{:02x}, PC: 0x{:04x}", opcode, PC));
 
   Opcode opcode_obj = kOpcodes.find(opcode)->second;
 
@@ -422,6 +421,23 @@ void Cpu::LSR(AddressingMode addressing) {
   UpdateZeroAndNegativeFlag(target);
 }
 
+void Cpu::NMI() {
+  uint16_t new_pc = PC + 2;
+  Push((new_pc & 0xFF));  // low bytes
+  Push(new_pc >> 8);  // high bytes
+
+  Status tmp;
+  tmp = P;
+  tmp.B = 1;
+  tmp.UNUSED = 1;
+  Push(tmp.raw);
+
+  PC = bus_.CpuRead16Bit(0xFFFA);
+  nmi_flipflop = false;
+
+  // P.INTERRUPT_DISABLE = 1;
+}
+
 void Cpu::NOP(AddressingMode addressing) {
   (void) addressing;
 }
@@ -646,11 +662,13 @@ void Cpu::Transfer(uint8_t from, uint8_t &to, bool p) {
 }
 
 void Cpu::Push(uint8_t value) {
-  bus_.CpuWrite8Bit(0x100 + (SP--), value);
+  bus_.CpuWrite8Bit(0x100 + SP, value);
+  SP--;
 }
 
 uint8_t Cpu::Pop() {
-  return bus_.CpuRead8Bit(0x100 + (++SP));
+  SP++;
+  return bus_.CpuRead8Bit(0x100 + SP);
 }
 
 }  // namespace nes
