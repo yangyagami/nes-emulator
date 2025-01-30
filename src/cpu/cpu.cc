@@ -471,6 +471,26 @@ void Cpu::ROL(AddressingMode addressing) {
   }
 }
 
+void Cpu::ROR(AddressingMode addressing) {
+  auto func = [this](uint8_t *v) {
+    uint8_t bit_zero = *v & 1;
+    *v >>= 1;
+    *v |= (P.CARRY << 7);
+    P.CARRY = bit_zero;
+
+    UpdateZeroAndNegativeFlag(*v);
+  };
+
+  if (addressing == kImplicit) {
+    func(&A);
+  } else {
+    uint16_t addr = GetAddress(addressing);
+    uint8_t m = bus_.CpuRead8Bit(addr);
+    func(&m);
+    bus_.CpuWrite8Bit(addr, m);
+  }
+}
+
 void Cpu::RTI(AddressingMode addressing) {
   (void) addressing;
 

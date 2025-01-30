@@ -129,6 +129,7 @@ struct Cpu {
   void PLA(AddressingMode addressing);
 
   void ROL(AddressingMode addressing);
+  void ROR(AddressingMode addressing);
   void RTI(AddressingMode addressing);
   void RTS(AddressingMode addressing);
 
@@ -411,6 +412,16 @@ struct Cpu {
                0x2E, 3, 6, &Cpu::ROL),
     NES_OPCODE("ROL", kAbsoluteX,
                0x3E, 3, 7, &Cpu::ROL),
+    NES_OPCODE("ROR", kImplicit,
+               0x6A, 1, 2, &Cpu::ROR),
+    NES_OPCODE("ROR", kZeroPage,
+               0x66, 2, 5, &Cpu::ROR),
+    NES_OPCODE("ROR", kZeroPageX,
+               0x76, 2, 6, &Cpu::ROR),
+    NES_OPCODE("ROR", kAbsolute,
+               0x6E, 3, 6, &Cpu::ROR),
+    NES_OPCODE("ROR", kAbsoluteX,
+               0x7E, 3, 7, &Cpu::ROR),
     NES_OPCODE("RTI", kImplicit,
                0x40, 1, 6, &Cpu::RTI),
     NES_OPCODE("RTS", kImplicit,

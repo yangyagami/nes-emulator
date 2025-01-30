@@ -1283,7 +1283,7 @@ TEST(ORA, All) {
   EXPECT_EQ(cpu.P.raw, 0b10110000);
 }
 
-TEST(ROL, Immediate) {
+TEST(ROL, Implicit) {
   std::array<uint8_t, 0x10000> memory = { 0 };
   /*
     LDA #$80
@@ -1389,6 +1389,84 @@ TEST(ROL, Absolute) {
   SafeTick(cpu);
   EXPECT_EQ(memory[0x00], 0x03);
   EXPECT_EQ(cpu.P.raw, 0b00110000);
+}
+
+TEST(ROR, kImplicit) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    LDA #$01
+    ROR
+   */
+  uint8_t tmp[] = {
+    0xa9, 0x01,
+    0x6a
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+  EXPECT_EQ(cpu.A, 0x00);
+  EXPECT_EQ(cpu.P.raw, 0b00110011);
+}
+
+TEST(ROR, Remain) {
+  std::array<uint8_t, 0x10000> memory = { 0 };
+  /*
+    ADC #$80
+    ADC #$80
+
+    ROR $00
+    ROR $00, X
+
+    ROR $0000
+    ROR $0000, X
+   */
+  uint8_t tmp[] = {
+    0x69, 0x80,
+    0x69, 0x80,
+
+    0x66, 0x00,
+    0x76, 0x00,
+
+    0x6e, 0x00, 0x00,
+    0x7e, 0x00, 0x00,
+  };
+  for (uint16_t i = 0; i < sizeof(tmp) / sizeof(tmp[0]); ++i) {
+    memory[0x0600 + i] = tmp[i];
+  }
+
+  nes::Bus bus(memory);
+
+  nes::Cpu cpu(bus);
+  cpu.Reset();
+  cpu.PC = 0x0600;
+
+  SafeTick(cpu);
+  SafeTick(cpu);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x0], 0x80);
+  EXPECT_EQ(cpu.P.raw, 0b11110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x0], 0x40);
+  EXPECT_EQ(cpu.P.raw, 0b01110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x0], 0x20);
+  EXPECT_EQ(cpu.P.raw, 0b01110000);
+
+  SafeTick(cpu);
+  EXPECT_EQ(memory[0x0], 0x10);
+  EXPECT_EQ(cpu.P.raw, 0b01110000);
 }
 
 TEST(RTI, All) {
