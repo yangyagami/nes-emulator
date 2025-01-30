@@ -2,14 +2,20 @@
 #define NES_EMULATOR_PPU_PPU_H_
 
 #include <cstdint>
+#include <array>
 
 #include "cpu/cpu.h"
+#include "cartridge/cartridge.h"
 
 namespace nes {
 
+// See https://www.nesdev.org/wiki/PPU
+
 class PPU {
  public:
-  PPU(Cpu &cpu) : cpu_(cpu) {
+  PPU(Cpu &cpu, Cartridge &cartridge)
+      : cpu_(cpu),
+        cartridge_(cartridge) {
     w = 0;
   }
 
@@ -19,6 +25,9 @@ class PPU {
   void Tick();
 
   bool one_frame_finished() const { return one_frame_finished_; }
+
+ private:
+  uint8_t ReadVRAM(uint16_t addr);
 
  private:
   // See https://www.nesdev.org/wiki/PPU_registers#PPUCTRL
@@ -69,6 +78,8 @@ class PPU {
   // See https://www.nesdev.org/wiki/PPU_registers#Internal_registers
   uint8_t w;
 
+  std::array<uint8_t, 0x0800> vram_;
+
   const int kScanLine = 261;
   const int kCycles = 340;
 
@@ -78,6 +89,7 @@ class PPU {
   int cycles_ = 0;
 
   Cpu &cpu_;
+  Cartridge &cartridge_;
 };
 
 }  // namespace nes

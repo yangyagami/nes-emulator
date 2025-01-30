@@ -451,6 +451,26 @@ void Cpu::PLA(AddressingMode addressing) {
   UpdateZeroAndNegativeFlag(A);
 }
 
+void Cpu::ROL(AddressingMode addressing) {
+  auto func = [this](uint8_t *v) {
+    int16_t tmp = *v << 1;
+    tmp = (tmp & ~1) | (P.CARRY & 1);
+    P.CARRY = tmp >> 8;
+    *v = tmp;
+
+    UpdateZeroAndNegativeFlag(*v);
+  };
+
+  if (addressing == kImplicit) {
+    func(&A);
+  } else {
+    uint16_t addr = GetAddress(addressing);
+    uint8_t m = bus_.CpuRead8Bit(addr);
+    func(&m);
+    bus_.CpuWrite8Bit(addr, m);
+  }
+}
+
 void Cpu::RTI(AddressingMode addressing) {
   (void) addressing;
 

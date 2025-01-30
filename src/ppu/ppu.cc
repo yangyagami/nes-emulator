@@ -72,6 +72,17 @@ uint8_t PPU::Read(uint16_t addr) {
       PPUSTATUS.VBLANK = 0;
       return ret;
     }
+    case 0x2007: {
+      uint8_t ret = ReadVRAM(addr);
+
+      if (PPUCTRL.VRAM_ADDR == 0) {
+        PPUADDR += 1;
+      } else {
+        PPUADDR += 32;
+      }
+
+      return ret;
+    }
     default: {
       nes_assert(false, std::format("Unsupported ppu read: {:#x}\n", addr));
     }
@@ -102,6 +113,17 @@ void PPU::Tick() {
       one_frame_finished_ = true;
     }
     cycles_ = 0;
+  }
+}
+
+uint8_t PPU::ReadVRAM(uint16_t addr) {
+  if (addr <= 0x0FFF) {
+    // PATTERN TABLE 0
+    return cartridge_.chr_rom[addr];
+  } else if (addr >= 0x2000 && addr <= 0x23FF) {
+    return vram_[addr - 0x2000];
+  } else {
+    nes_assert(false, std::format("Unsupported vram read: {:#x}", addr));
   }
 }
 

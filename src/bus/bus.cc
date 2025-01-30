@@ -52,6 +52,7 @@ uint8_t Bus::CpuRead8Bit(uint16_t address) {
     return ppu_.Read(address);
   } else if (address >= 0x4000 && address <= 0x4017) {
     // TODO(yangsiyu):
+    return 0;
   } else if (address >= 0x4020) {
     // Cartridge
     if (address >= 0x8000) {

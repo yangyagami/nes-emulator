@@ -9,7 +9,7 @@ namespace nes {
 Machine::Machine(const std::string &path)
     : bus_(memory_, cartridge_, ppu_),
       cpu_(bus_),
-      ppu_(cpu_),
+      ppu_(cpu_, cartridge_),
       rom_path_(path) {
 }
 
