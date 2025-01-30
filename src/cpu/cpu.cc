@@ -10,10 +10,18 @@
 
 namespace nes {
 
-Cpu::Cpu(Bus &bus) : bus_(bus) {}
+Cpu::Cpu(Bus &bus) : bus_(bus) {
+  nmi_flipflop = false;
+}
 
 void Cpu::Tick() {
   nes_assert(cycles == 0, std::format("Invalid cycles: {}", cycles));
+
+  // See https://www.nesdev.org/wiki/NMI
+  if (nmi_flipflop) {
+    PC = bus_.CpuRead16Bit(0xFFFA);
+    nmi_flipflop = false;
+  }
 
   jumped_ = false;
 
@@ -444,6 +452,8 @@ void Cpu::PLA(AddressingMode addressing) {
 }
 
 void Cpu::RTI(AddressingMode addressing) {
+  (void) addressing;
+
   Status old = P;
   P.raw = Pop();
   P.UNUSED = old.UNUSED;

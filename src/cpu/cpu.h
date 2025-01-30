@@ -63,6 +63,8 @@ struct Cpu {
 
   uint8_t cycles;
 
+  bool nmi_flipflop;
+
   Cpu(Bus &bus);
 
   void Tick();

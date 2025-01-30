@@ -3,9 +3,24 @@
 
 #include <cstdint>
 
+#include "cpu/cpu.h"
+
 namespace nes {
 
-struct PPU {
+class PPU {
+ public:
+  PPU(Cpu &cpu) : cpu_(cpu) {
+    w = 0;
+  }
+
+  void Write(uint16_t addr, uint8_t v);
+  uint8_t Read(uint16_t addr);
+
+  void Tick();
+
+  bool one_frame_finished() const { return one_frame_finished_; }
+
+ private:
   // See https://www.nesdev.org/wiki/PPU_registers#PPUCTRL
   union {
     struct {
@@ -43,16 +58,26 @@ struct PPU {
     uint8_t raw;
   } PPUSTATUS;
 
-  void Write(uint16_t addr, uint8_t v);
+  uint8_t OAMADDR;
+  uint8_t PPUSCROLL;
+  uint16_t PPUADDR;
+  uint8_t OAMDMA;
 
-  void Tick();
+  uint8_t x_scroll_;
+  uint8_t y_scroll_;
 
- private:
+  // See https://www.nesdev.org/wiki/PPU_registers#Internal_registers
+  uint8_t w;
+
   const int kScanLine = 261;
   const int kCycles = 340;
 
+  bool one_frame_finished_;
+
   int scanline_ = -1;
   int cycles_ = 0;
+
+  Cpu &cpu_;
 };
 
 }  // namespace nes
