@@ -51,6 +51,7 @@ void PPU::Write(uint16_t addr, uint8_t v) {
       } else {
         PPUADDR += 32;
       }
+      break;
     }
     case 0x4014: {
       OAMDMA = v;
@@ -131,6 +132,8 @@ void PPU::Tick() {
             uint8_t plane0_bit = (plane0 >> k) & 0x1;
             uint8_t plane1_bit = (plane1 >> k) & 0x1;
             uint8_t color_idx = plane0_bit + plane1_bit * 2;
+
+            // TODO(yangsiyu): Make this to a single frame data.
 
             DrawRectangle(((cycles_ / 8) - 1) * kCellSize * 8 + (7 - k) * kCellSize,
                           scanline_ * kCellSize,
