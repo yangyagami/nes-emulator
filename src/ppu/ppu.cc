@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "raylib.h"
+
 #include "utils/assert.h"
 
 namespace nes {
@@ -43,6 +45,7 @@ void PPU::Write(uint16_t addr, uint8_t v) {
       break;
     }
     case 0x2007: {
+      WriteVRAM(PPUADDR, v);
       if (PPUCTRL.VRAM_ADDR == 0) {
         PPUADDR += 1;
       } else {
@@ -94,10 +97,18 @@ void PPU::Tick() {
     }
   }
   if (scanline_ == 241 && cycles_ == 1) {
+    PPUSTATUS.VBLANK = 1;
     if (PPUCTRL.VBLANK_NMI) {
       cpu_.nmi_flipflop = true;
     }
-    PPUSTATUS.VBLANK = 1;
+  }
+
+  if (scanline_ >= 0 && scanline_ <= 239) {
+    if (cycles_ >= 1 && cycles_ <= 256) {
+      if (PPUMASK.BACKGROUND) {
+        // See https://www.nesdev.org/wiki/PPU_rendering#Visible_scanlines_(0-239)
+      }
+    }
   }
 
   cycles_++;
@@ -111,14 +122,77 @@ void PPU::Tick() {
   }
 }
 
+void PPU::TestRenderNametable(uint16_t addr) {
+  const int kCellSize = 2;
+  Color colors[] = {
+    BLACK,
+    WHITE,
+    BLUE,
+    RED,
+  };
+  for (int i = addr; i < addr + 0x0400; i++) {
+    uint8_t tile_id = ReadVRAM(i);
+    int x = (i - 0x2000) % 32;
+    int y = (i - 0x2000) / 32;
+    for (int j = tile_id * 16; j < tile_id * 16 + 8; ++j) {
+      uint8_t plane0 = cartridge_.chr_rom[j];
+      uint8_t plane1 = cartridge_.chr_rom[j + 8];
+
+      for (int k = 7; k >= 0; --k) {
+        uint8_t plane0_bit = (plane0 >> k) & 0x1;
+        uint8_t plane1_bit = (plane1 >> k) & 0x1;
+        uint8_t color_idx = plane0_bit + plane1_bit * 2;
+
+        DrawRectangle(x * 8 * kCellSize + (7 - k) * kCellSize,
+                      y * 8 * kCellSize + (j - tile_id * 16) * kCellSize,
+                      kCellSize, kCellSize, colors[color_idx]);
+      }
+    }
+  }
+}
+
 uint8_t PPU::ReadVRAM(uint16_t addr) {
   if (addr <= 0x0FFF) {
     // PATTERN TABLE 0
     return cartridge_.chr_rom[addr];
   } else if (addr >= 0x2000 && addr <= 0x23FF) {
     return vram_[addr - 0x2000];
+  } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 0) {
+    if (addr >= 0x2400 && addr <= 0x27FF) {
+      return vram_[addr - 0x2400];
+    } else if (addr >= 0x2800 && addr <= 0x2BFF) {
+      return vram_[addr - 0x2400];
+    } else if (addr >= 0x2C00 && addr <= 0x2FFF) {
+      return vram_[addr - 0x2800];
+    } else {
+      nes_assert(false, std::format("Unsupported vram read: {:#x}", addr));
+    }
+  } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 1) {
+    nes_assert(false, std::format("Unsupported vram read for vertical mirroring: {:#x}", addr));
   } else {
     nes_assert(false, std::format("Unsupported vram read: {:#x}", addr));
+  }
+}
+
+void PPU::WriteVRAM(uint16_t addr, uint8_t v) {
+  if (addr >= 0x2000 && addr <= 0x23FF) {
+    vram_[addr - 0x2000] = v;
+  } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 0) {
+    if (addr >= 0x2400 && addr <= 0x27FF) {
+      vram_[addr - 0x2400] = v;
+    } else if (addr >= 0x2800 && addr <= 0x2BFF) {
+      vram_[addr - 0x2400] = v;
+    } else if (addr >= 0x2C00 && addr <= 0x2FFF) {
+      vram_[addr - 0x2800] = v;
+    } else {
+      // TODO(yangsiyu):
+      return;
+      nes_assert(false, std::format("Unsupported vram write: {:#x}", addr));
+    }
+  } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 1) {
+    nes_assert(false, std::format("Unsupported vram write for vertical mirroring: {:#x}", addr));
+  } else {
+    nes_assert(false, std::format("Unsupported vram write: {:#x}", addr));
   }
 }
 

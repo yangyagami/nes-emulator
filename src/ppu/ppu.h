@@ -26,8 +26,12 @@ class PPU {
 
   bool one_frame_finished() const { return one_frame_finished_; }
 
+  // These functions just for test.
+  void TestRenderNametable(uint16_t addr);
+
  private:
   uint8_t ReadVRAM(uint16_t addr);
+  void WriteVRAM(uint16_t addr, uint8_t v);
 
  private:
   // See https://www.nesdev.org/wiki/PPU_registers#PPUCTRL

@@ -26,6 +26,9 @@ int Machine::Run() {
   cpu_.PC = bus_.CpuRead16Bit(0xFFFC);
   cpu_.SP = 0xFD;
 
+  Camera2D camera;
+  camera.zoom = 1.0f;
+
   while (!WindowShouldClose()) {
     bool out = false;
     while (!out) {
@@ -38,8 +41,26 @@ int Machine::Run() {
       }
       while(--cpu_.cycles > 0);
     }
+
+    float camera_speed = 120.0f;
+
+    if (IsKeyDown(KEY_D)) {
+      camera.offset.x -= camera_speed;
+    } else if (IsKeyDown(KEY_A)) {
+      camera.offset.x += camera_speed;
+    }
+
+    if (IsKeyDown(KEY_W)) {
+      camera.offset.y += camera_speed;
+    } else if (IsKeyDown(KEY_S)) {
+      camera.offset.y -= camera_speed;
+    }
     BeginDrawing();
     ClearBackground(BLACK);
+
+    BeginMode2D(camera);
+    ppu_.TestRenderNametable(0x2000);
+    EndMode2D();
     EndDrawing();
   }
   return 0;
