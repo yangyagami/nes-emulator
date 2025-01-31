@@ -107,6 +107,36 @@ void PPU::Tick() {
     if (cycles_ >= 1 && cycles_ <= 256) {
       if (PPUMASK.BACKGROUND) {
         // See https://www.nesdev.org/wiki/PPU_rendering#Visible_scanlines_(0-239)
+        if (cycles_ % 8 == 0) {
+          uint16_t base_addr = PPUCTRL.NAMETABLE_ADDR * 0x0400 + 0x2000;
+          uint16_t addr = base_addr + cycles_ / 8 - 1 + scanline_ / 8 * 32;
+          uint8_t tile_id = ReadVRAM(addr);
+
+          uint16_t pattern_addr = PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000;
+
+          uint16_t tile_addr = tile_id * 16 + pattern_addr + scanline_ % 8;
+
+          uint8_t plane0 = cartridge_.chr_rom[tile_addr];
+          uint8_t plane1 = cartridge_.chr_rom[tile_addr + 8];
+
+          const int kCellSize = 2;
+          Color colors[] = {
+            BLACK,
+            WHITE,
+            BLUE,
+            RED,
+          };
+
+          for (int k = 7; k >= 0; --k) {
+            uint8_t plane0_bit = (plane0 >> k) & 0x1;
+            uint8_t plane1_bit = (plane1 >> k) & 0x1;
+            uint8_t color_idx = plane0_bit + plane1_bit * 2;
+
+            DrawRectangle(((cycles_ / 8) - 1) * kCellSize * 8 + (7 - k) * kCellSize,
+                          scanline_ * kCellSize,
+                          kCellSize, kCellSize, colors[color_idx]);
+          }
+        }
       }
     }
   }

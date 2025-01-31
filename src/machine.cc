@@ -30,18 +30,6 @@ int Machine::Run() {
   camera.zoom = 1.0f;
 
   while (!WindowShouldClose()) {
-    bool out = false;
-    while (!out) {
-      cpu_.Tick();
-      for (int i = 0; i < 3 * cpu_.cycles; ++i) {
-        ppu_.Tick();
-        if (ppu_.one_frame_finished()) {
-          out = true;
-        }
-      }
-      while(--cpu_.cycles > 0);
-    }
-
     float camera_speed = 120.0f;
 
     if (IsKeyDown(KEY_D)) {
@@ -59,7 +47,18 @@ int Machine::Run() {
     ClearBackground(BLACK);
 
     BeginMode2D(camera);
-    ppu_.TestRenderNametable(0x2000);
+    bool out = false;
+    while (!out) {
+      cpu_.Tick();
+      for (int i = 0; i < 3 * cpu_.cycles; ++i) {
+        ppu_.Tick();
+        if (ppu_.one_frame_finished()) {
+          out = true;
+        }
+      }
+      while(--cpu_.cycles > 0);
+    }
+    // ppu_.TestRenderNametable(0x2000);
     EndMode2D();
     EndDrawing();
   }
