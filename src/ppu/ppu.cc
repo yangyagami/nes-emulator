@@ -69,6 +69,7 @@ uint8_t PPU::Read(uint16_t addr) {
     case 0x2002: {
       uint8_t ret = PPUSTATUS.raw;
       PPUSTATUS.VBLANK = 0;
+      w = 0;
       return ret;
     }
     case 0x2007: {
@@ -159,7 +160,7 @@ void PPU::Tick() {
             // TODO(yangsiyu): Make this to a single frame data.
 
             uint8_t colorid = ReadVRAM(0x3F00 + palette_idx + color_idx);
-            DrawRectangle(((cycles_ / 8) - 1) * kCellSize * 8 + (7 - k) * kCellSize,
+            DrawRectangle((cycles_ - 1) / 8 * kCellSize * 8 + (7 - k) * kCellSize,
                           scanline_ * kCellSize,
                           kCellSize, kCellSize, kColors[colorid]);
           }
