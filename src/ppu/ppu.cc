@@ -110,7 +110,36 @@ void PPU::Tick() {
         // See https://www.nesdev.org/wiki/PPU_rendering#Visible_scanlines_(0-239)
         if (cycles_ % 8 == 0) {
           uint16_t base_addr = PPUCTRL.NAMETABLE_ADDR * 0x0400 + 0x2000;
-          uint16_t addr = base_addr + cycles_ / 8 - 1 + scanline_ / 8 * 32;
+
+          uint16_t attr_addr = base_addr + 0x03C0 + (cycles_ - 1) / 32 + scanline_ / 32 * 8;
+          uint8_t attr = ReadVRAM(attr_addr);
+
+          uint8_t palette_idx = 1;
+
+          int column = (cycles_ - 1) / 8;
+          int row = scanline_ / 8;
+
+          if (column % 4 / 2 == 0) {
+            // Left
+            if (row % 4 / 2 == 0) {
+              // Top left
+              palette_idx = (attr & 0x3) * 4;
+            } else {
+              // Bottom left
+              palette_idx = ((attr & 0x30) >> 4) * 4;
+            }
+          } else {
+            // Right
+            if (row % 4 / 2 == 0) {
+              // Top right
+              palette_idx = ((attr & 0xC) >> 2) * 4;
+            } else {
+              // Bottom right
+              palette_idx = ((attr & 0xC0) >> 6) * 4;
+            }
+          }
+
+          uint16_t addr = base_addr + (cycles_ - 1) / 8 + scanline_ / 8 * 32;
           uint8_t tile_id = ReadVRAM(addr);
 
           uint16_t pattern_addr = PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000;
@@ -120,13 +149,7 @@ void PPU::Tick() {
           uint8_t plane0 = cartridge_.chr_rom[tile_addr];
           uint8_t plane1 = cartridge_.chr_rom[tile_addr + 8];
 
-          const int kCellSize = 2;
-          Color colors[] = {
-            BLACK,
-            WHITE,
-            BLUE,
-            RED,
-          };
+          const int kCellSize = 2; // TODO(yangsiyu): Fit to window.
 
           for (int k = 7; k >= 0; --k) {
             uint8_t plane0_bit = (plane0 >> k) & 0x1;
@@ -135,9 +158,10 @@ void PPU::Tick() {
 
             // TODO(yangsiyu): Make this to a single frame data.
 
+            uint8_t colorid = ReadVRAM(0x3F00 + palette_idx + color_idx);
             DrawRectangle(((cycles_ / 8) - 1) * kCellSize * 8 + (7 - k) * kCellSize,
                           scanline_ * kCellSize,
-                          kCellSize, kCellSize, colors[color_idx]);
+                          kCellSize, kCellSize, kColors[colorid]);
           }
         }
       }
@@ -197,6 +221,8 @@ uint8_t PPU::ReadVRAM(uint16_t addr) {
       return vram_[addr - 0x2400];
     } else if (addr >= 0x2C00 && addr <= 0x2FFF) {
       return vram_[addr - 0x2800];
+    } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+      return palettes_[addr - 0x3F00];
     } else {
       nes_assert(false, std::format("Unsupported vram read: {:#x}", addr));
     }
@@ -217,9 +243,9 @@ void PPU::WriteVRAM(uint16_t addr, uint8_t v) {
       vram_[addr - 0x2400] = v;
     } else if (addr >= 0x2C00 && addr <= 0x2FFF) {
       vram_[addr - 0x2800] = v;
+    } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+      palettes_[addr - 0x3F00] = v;
     } else {
-      // TODO(yangsiyu):
-      return;
       nes_assert(false, std::format("Unsupported vram write: {:#x}", addr));
     }
   } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 1) {
