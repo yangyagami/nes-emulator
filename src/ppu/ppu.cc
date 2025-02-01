@@ -140,8 +140,8 @@ void PPU::Tick() {
             }
           }
 
-          uint16_t addr = base_addr + (cycles_ - 1) / 8 + scanline_ / 8 * 32;
-          uint8_t tile_id = ReadVRAM(addr);
+          uint16_t nm_addr = base_addr + (cycles_ - 1) / 8 + scanline_ / 8 * 32;
+          uint8_t tile_id = ReadVRAM(nm_addr);
 
           uint16_t pattern_addr = PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000;
 
