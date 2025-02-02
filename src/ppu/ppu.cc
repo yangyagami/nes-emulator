@@ -43,11 +43,11 @@ void PPU::Write(uint16_t addr, uint8_t value) {
         w = 0;
       } else {
         // Clear first, then write.
-        t.raw = 0;
+        t.raw = 0x0;
         uint16_t mask = 0x3f00;
         value &= 0x3f;
-        value <<= 8;
-        t.raw = (t.raw & ~mask) | (value & mask);
+        int tmp = value << 8;
+        t.raw = (t.raw & ~mask) | (tmp & mask);
         w = 1;
       }
       break;
@@ -106,40 +106,43 @@ void PPU::Tick() {
   if (scanline_ >= 0 && scanline_ <= 239) {
     if (cycles_ >= 1 && cycles_ <= 256) {
       if (PPUMASK.BACKGROUND) {
-        // See https://www.nesdev.org/wiki/PPU_rendering#Visible_scanlines_(0-239)
-        if (cycles_ % 8 == 0) {
-          uint16_t base_addr = PPUCTRL.NAMETABLE_ADDR * 0x0400 + 0x2000;
-
-          uint16_t attr_addr = base_addr + 0x03C0 + (cycles_ - 1) / 32 + scanline_ / 32 * 8;
-          uint8_t attr = ReadVRAM(attr_addr);
-
-          uint8_t palette_idx = 1;
-
-          int column = (cycles_ - 1) / 8;
-          int row = scanline_ / 8;
-
-          if (column % 4 / 2 == 0) {
-            // Left
-            if (row % 4 / 2 == 0) {
-              // Top left
-              palette_idx = (attr & 0x3) * 4;
-            } else {
-              // Bottom left
-              palette_idx = ((attr & 0x30) >> 4) * 4;
-            }
+        // Picked from https://www.nesdev.org/wiki/PPU_scrolling#Coarse_X_increment
+        x++;
+        if (x > 7) {
+          x = 0;
+          if ((v.raw & 0x001F) == 31) {// if coarse X == 31
+            v.raw &= ~0x001F;          // coarse X = 0
+            v.raw ^= 0x0400;           // switch horizontal nametable
           } else {
-            // Right
-            if (row % 4 / 2 == 0) {
-              // Top right
-              palette_idx = ((attr & 0xC) >> 2) * 4;
+            v.raw += 1;                // increment coarse X
+          }
+        }
+        if (cycles_ == 256) {
+          if ((v.raw & 0x7000) != 0x7000) {        // if fine Y < 7
+            v.raw += 0x1000;                      // increment fine Y
+          } else {
+            v.raw &= ~0x7000;                     // fine Y = 0
+
+            int y = (v.raw & 0x03E0) >> 5;        // let y = coarse Y
+
+            if (y == 29) {
+              y = 0;                          // coarse Y = 0
+              v.raw ^= 0x0800;                    // switch vertical nametable
+            } else if (y == 31) {
+              y = 0;                          // coarse Y = 0, nametable not switched
             } else {
-              // Bottom right
-              palette_idx = ((attr & 0xC0) >> 6) * 4;
+              y += 1;                         // increment coarse Y
+              v.raw = (v.raw & ~0x03E0) | (y << 5);     // put coarse Y back into v
             }
           }
+        }
 
-          uint16_t nm_addr = base_addr + (cycles_ - 1) / 8 + scanline_ / 8 * 32;
-          uint8_t tile_id = ReadVRAM(nm_addr);
+        if (cycles_ % 8 == 0) {
+          uint16_t nm_address = 0x2000 | (v.raw & 0x0FFF);
+          uint16_t attr_address = 0x23C0 | (v.raw & 0x0C00) | ((v.raw >> 4) & 0x38) | ((v.raw >> 2) & 0x07);
+
+          uint8_t tile_id = ReadVRAM(nm_address);
+          uint8_t attr_id = ReadVRAM(attr_address);
 
           uint16_t pattern_addr = PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000;
 
@@ -150,6 +153,13 @@ void PPU::Tick() {
 
           const int kCellSize = 2; // TODO(yangsiyu): Fit to window.
 
+          Color colors[] = {
+            BLACK,
+            BLUE,
+            RED,
+            WHITE,
+          };
+
           for (int k = 7; k >= 0; --k) {
             uint8_t plane0_bit = (plane0 >> k) & 0x1;
             uint8_t plane1_bit = (plane1 >> k) & 0x1;
@@ -157,12 +167,70 @@ void PPU::Tick() {
 
             // TODO(yangsiyu): Make this to a single frame data.
 
-            uint8_t colorid = ReadVRAM(0x3F00 + palette_idx + color_idx);
             DrawRectangle((cycles_ - 1) / 8 * kCellSize * 8 + (7 - k) * kCellSize,
                           scanline_ * kCellSize,
-                          kCellSize, kCellSize, kColors[colorid]);
+                          kCellSize, kCellSize, colors[color_idx]);
           }
         }
+
+
+        // See https://www.nesdev.org/wiki/PPU_rendering#Visible_scanlines_(0-239)
+        // if (cycles_ % 8 == 0) {
+        //   uint16_t base_addr = PPUCTRL.NAMETABLE_ADDR * 0x0400 + 0x2000;
+
+        //   uint16_t attr_addr = base_addr + 0x03C0 + (cycles_ - 1) / 32 + scanline_ / 32 * 8;
+        //   uint8_t attr = ReadVRAM(attr_addr);
+
+        //   uint8_t palette_idx = 1;
+
+        //   int column = (cycles_ - 1) / 8;
+        //   int row = scanline_ / 8;
+
+        //   if (column % 4 / 2 == 0) {
+        //     // Left
+        //     if (row % 4 / 2 == 0) {
+        //       // Top left
+        //       palette_idx = (attr & 0x3) * 4;
+        //     } else {
+        //       // Bottom left
+        //       palette_idx = ((attr & 0x30) >> 4) * 4;
+        //     }
+        //   } else {
+        //     // Right
+        //     if (row % 4 / 2 == 0) {
+        //       // Top right
+        //       palette_idx = ((attr & 0xC) >> 2) * 4;
+        //     } else {
+        //       // Bottom right
+        //       palette_idx = ((attr & 0xC0) >> 6) * 4;
+        //     }
+        //   }
+
+        //   uint16_t nm_addr = base_addr + (cycles_ - 1) / 8 + scanline_ / 8 * 32;
+        //   uint8_t tile_id = ReadVRAM(nm_addr);
+
+        //   uint16_t pattern_addr = PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000;
+
+        //   uint16_t tile_addr = tile_id * 16 + pattern_addr + scanline_ % 8;
+
+        //   uint8_t plane0 = cartridge_.chr_rom[tile_addr];
+        //   uint8_t plane1 = cartridge_.chr_rom[tile_addr + 8];
+
+        //   const int kCellSize = 2; // TODO(yangsiyu): Fit to window.
+
+        //   for (int k = 7; k >= 0; --k) {
+        //     uint8_t plane0_bit = (plane0 >> k) & 0x1;
+        //     uint8_t plane1_bit = (plane1 >> k) & 0x1;
+        //     uint8_t color_idx = plane0_bit + plane1_bit * 2;
+
+        //     // TODO(yangsiyu): Make this to a single frame data.
+
+        //     uint8_t colorid = ReadVRAM(0x3F00 + palette_idx + color_idx);
+        //     DrawRectangle((cycles_ - 1) / 8 * kCellSize * 8 + (7 - k) * kCellSize,
+        //                   scanline_ * kCellSize,
+        //                   kCellSize, kCellSize, kColors[colorid]);
+        //   }
+        // }
       }
     }
   }

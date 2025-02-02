@@ -77,13 +77,14 @@ class PPU {
   uint8_t OAMDMA;
 
   // See https://www.nesdev.org/wiki/PPU_registers#Internal_registers
+  // TODO(yangsiyu): Change this to portable
   union {
     struct {
       uint8_t COARSE_X : 5;
       uint8_t COARSE_Y : 5;
       uint8_t NAMETABLE : 2;
       uint8_t FINE_Y : 3;
-    };
+    }__attribute__ ((packed));
     uint16_t raw;
   } v, t;
   uint8_t x;

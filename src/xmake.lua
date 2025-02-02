@@ -8,6 +8,7 @@ add_files(
    "ppu/*.cc"
 )
 add_includedirs(".", { public = true })
+add_packages("raylib")
 
 
 target("nes-emulator")
