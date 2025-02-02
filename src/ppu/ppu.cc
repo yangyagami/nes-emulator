@@ -95,6 +95,11 @@ void PPU::Tick() {
     if (cycles_ == 1) {
       PPUSTATUS.VBLANK = 0;
     }
+    if (cycles_ == 304) {
+      v.COARSE_Y = t.COARSE_Y;
+      v.NAMETABLE = (v.NAMETABLE & 0x01) | (t.NAMETABLE & 0x02);
+      v.FINE_Y = t.FINE_Y;
+    }
   }
   if (scanline_ == 241 && cycles_ == 1) {
     PPUSTATUS.VBLANK = 1;
@@ -231,6 +236,12 @@ void PPU::Tick() {
         //                   kCellSize, kCellSize, kColors[colorid]);
         //   }
         // }
+      }
+    }
+    if (cycles_ == 257) {
+      if (PPUMASK.BACKGROUND) {
+        v.COARSE_X = t.COARSE_X;
+        v.NAMETABLE = t.NAMETABLE & 0x1;
       }
     }
   }
