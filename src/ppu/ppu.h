@@ -21,7 +21,7 @@ class PPU {
     w = 0;
   }
 
-  void Write(uint16_t addr, uint8_t v);
+  void Write(uint16_t addr, uint8_t value);
   uint8_t Read(uint16_t addr);
 
   void Tick();
@@ -74,14 +74,19 @@ class PPU {
   } PPUSTATUS;
 
   uint8_t OAMADDR;
-  uint8_t PPUSCROLL;
-  uint16_t PPUADDR;
   uint8_t OAMDMA;
 
-  uint8_t x_scroll_;
-  uint8_t y_scroll_;
-
   // See https://www.nesdev.org/wiki/PPU_registers#Internal_registers
+  union {
+    struct {
+      uint8_t COARSE_X : 5;
+      uint8_t COARSE_Y : 5;
+      uint8_t NAMETABLE : 2;
+      uint8_t FINE_Y : 3;
+    };
+    uint16_t raw;
+  } v, t;
+  uint8_t x;
   uint8_t w;
 
   std::array<uint8_t, 0x0800> vram_;

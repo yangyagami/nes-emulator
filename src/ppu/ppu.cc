@@ -8,53 +8,57 @@
 
 namespace nes {
 
-void PPU::Write(uint16_t addr, uint8_t v) {
+void PPU::Write(uint16_t addr, uint8_t value) {
   switch (addr) {
     case 0x2000: {
-      PPUCTRL.raw = v;
+      // See https://www.nesdev.org/wiki/PPU_scrolling#PPU_internal_registers
+      PPUCTRL.raw = value;
+      t.NAMETABLE = PPUCTRL.NAMETABLE_ADDR;
       break;
     }
     case 0x2001: {
-      PPUMASK.raw = v;
+      PPUMASK.raw = value;
       break;
     }
     case 0x2003: {
-      OAMADDR = v;
+      OAMADDR = value;
       break;
     }
     case 0x2005: {
       if (w == 1) {
-        PPUSCROLL = v;
-        y_scroll_ = PPUSCROLL;
+        t.COARSE_Y = (value & 0x3E0) >> 5;
+        t.FINE_Y = value & 0x07;
         w = 0;
       } else {
-        PPUSCROLL = v;
-        x_scroll_ = PPUSCROLL;
+        t.COARSE_X = (value & 0xF8) >> 3;
+        x = value & 0x7;
         w = 1;
       }
       break;
     }
     case 0x2006: {
       if (w == 1) {
-        PPUADDR = (PPUADDR << 8) | v;
+        t.raw |= value;
+        v.raw = t.raw;
         w = 0;
       } else {
-        PPUADDR = v;
+        // Clear first, then write.
+        t.raw = 0;
+        uint16_t mask = 0x3f00;
+        value &= 0x3f;
+        value <<= 8;
+        t.raw = (t.raw & ~mask) | (value & mask);
         w = 1;
       }
       break;
     }
     case 0x2007: {
-      WriteVRAM(PPUADDR, v);
-      if (PPUCTRL.VRAM_ADDR == 0) {
-        PPUADDR += 1;
-      } else {
-        PPUADDR += 32;
-      }
+      WriteVRAM(v.raw, value);
+      v.raw += (PPUCTRL.VRAM_ADDR == 0 ? 1 : 32);
       break;
     }
     case 0x4014: {
-      OAMDMA = v;
+      OAMDMA = value;
       break;
     }
     default: {
@@ -73,14 +77,8 @@ uint8_t PPU::Read(uint16_t addr) {
       return ret;
     }
     case 0x2007: {
-      uint8_t ret = ReadVRAM(addr);
-
-      if (PPUCTRL.VRAM_ADDR == 0) {
-        PPUADDR += 1;
-      } else {
-        PPUADDR += 32;
-      }
-
+      uint8_t ret = ReadVRAM(v.raw);
+      v.raw += (PPUCTRL.VRAM_ADDR == 0 ? 1 : 32);
       return ret;
     }
     default: {
