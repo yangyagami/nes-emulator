@@ -26,11 +26,11 @@ void PPU::Write(uint16_t addr, uint8_t value) {
     }
     case 0x2005: {
       if (w == 1) {
-        t.COARSE_Y = (value & 0x3E0) >> 5;
+        t.COARSE_Y = value >> 3;
         t.FINE_Y = value & 0x07;
         w = 0;
       } else {
-        t.COARSE_X = (value & 0xF8) >> 3;
+        t.COARSE_X = value >> 3;
         x = value & 0x7;
         w = 1;
       }
@@ -92,44 +92,57 @@ void PPU::Tick() {
   one_frame_finished_ = false;
 
   if (PPUMASK.BACKGROUND_RENDERING && scanline_ >= -1 && scanline_ <= 239) {
-    switch (cycles_ % 8) {
-      case 2: {  // Nametable
-        uint16_t nm_addr = 0x2000 | (v.raw & 0x0FFF);
-        tile_id = ReadVRAM(nm_addr);
-        break;
-      }
-      case 4: {  // Attribute
-        uint16_t attr_addr =
-            0x23C0 | (v.raw & 0x0C00) | ((v.raw >> 4) & 0x38) | ((v.raw >> 2) & 0x07);
-        attr = ReadVRAM(attr_addr);
-        break;
-      }
-      case 6: {  // BG lsbits
-        bg_pattern_ls =
-            ReadVRAM(PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000 + tile_id * 16 + v.FINE_Y);
-        break;
-      }
-      case 7: {  // BG msbits && IncrementHorizontalV
-        bg_pattern_ms = ReadVRAM(
-            PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000 + tile_id * 16 + v.FINE_Y + 8);
-        break;
+    if (cycles_ >= 0 && cycles_ <= 256 || cycles_ >= 321 || cycles_ <= 336) {
+      switch (cycles_ % 8) {
+        case 2: {  // Nametable
+          uint16_t nm_addr = 0x2000 | (v.raw & 0x0FFF);
+          tile_id = ReadVRAM(nm_addr);
+          break;
+        }
+        case 4: {  // Attribute
+          uint16_t attr_addr =
+              0x23C0 | (v.raw & 0x0C00) | ((v.raw >> 4) & 0x38) | ((v.raw >> 2) & 0x07);
+          attr = ReadVRAM(attr_addr);
+          break;
+        }
+        case 6: {  // BG lsbits
+          bg_pattern_ls =
+              ReadVRAM(PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000 + tile_id * 16 + v.FINE_Y);
+          break;
+        }
+        case 7: {  // BG msbits && IncrementHorizontalV
+          bg_pattern_ms = ReadVRAM(
+              PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000 + tile_id * 16 + v.FINE_Y + 8);
+          break;
+        }
       }
     }
 
-    if (cycles_ % 8 == 0 && cycles_ / 8 > 0) {
-      bg_ls_shift = (bg_ls_shift & 0xFF00) | bg_pattern_ls;
-      bg_ms_shift = (bg_ms_shift & 0xFF00) | bg_pattern_ms;
-      IncrementHorizontalV();
-    }
+    if (cycles_ >= 328 || cycles_ <= 256) {
+      if (cycles_ % 8 == 0 && cycles_ / 8 > 0) {
+        bg_ls_shift = (bg_ls_shift & 0xFF00) | bg_pattern_ls;
+        bg_ms_shift = (bg_ms_shift & 0xFF00) | bg_pattern_ms;
+        IncrementHorizontalV();
+      }
 
-    if (cycles_ == 256) {
-      IncrementVerticalV();
+      if (cycles_ == 256) {
+        IncrementVerticalV();
+      }
     }
 
     if (cycles_ == 257) {
       v.COARSE_X = t.COARSE_X;
       uint8_t mask = 0x01;
       v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
+    }
+
+    if (scanline_ == -1) {
+      if (cycles_ >= 280 && cycles_ <= 304) {
+        v.COARSE_Y = t.COARSE_Y;
+        uint8_t mask = 0x2;
+        v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
+        v.FINE_Y = t.FINE_Y;
+      }
     }
   }
 
@@ -138,15 +151,6 @@ void PPU::Tick() {
     // TODO(yangsiyu):
     if (cycles_ == 1) {
       PPUSTATUS.VBLANK = 0;
-    }
-
-    if (PPUMASK.BACKGROUND_RENDERING) {
-      if (cycles_ >= 280 && cycles_ <= 304) {
-        v.COARSE_Y = t.COARSE_Y;
-        uint8_t mask = 0x2;
-        v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
-        v.FINE_Y = t.FINE_Y;
-      }
     }
   }
 
@@ -161,15 +165,16 @@ void PPU::Tick() {
   if (scanline_ >= 0 && scanline_ <= 239) {
     if (cycles_ >= 1 && cycles_ <= 256) {
       if (PPUMASK.BACKGROUND) {
-        uint8_t plane0 = (bg_ls_shift & 0x80) >> 7;
-        uint8_t plane1 = (bg_ms_shift & 0x80) >> 7;
+        uint16_t mask = (0x8000 >> x);
+        uint8_t plane0 = (bg_ls_shift & mask) > 0;
+        uint8_t plane1 = (bg_ms_shift & mask) > 0;
 
         const int kCellSize = 2;
 
         Color colors[] = {
           BLACK,
           BLUE,
-          RED,
+          BLACK,
           WHITE,
         };
 
@@ -180,65 +185,9 @@ void PPU::Tick() {
 
         DrawRectangle(cycles_ * kCellSize,
                       scanline_ * kCellSize,
-                      kCellSize, kCellSize, kColors[colorid]);
+                      kCellSize, kCellSize, colors[colorid]);
 
         // See https://www.nesdev.org/wiki/PPU_rendering#Visible_scanlines_(0-239)
-        // if (cycles_ % 8 == 0) {
-        //   uint16_t base_addr = PPUCTRL.NAMETABLE_ADDR * 0x0400 + 0x2000;
-
-        //   uint16_t attr_addr = base_addr + 0x03C0 + (cycles_ - 1) / 32 + scanline_ / 32 * 8;
-        //   uint8_t attr = ReadVRAM(attr_addr);
-
-        //   uint8_t palette_idx = 1;
-
-        //   int column = (cycles_ - 1) / 8;
-        //   int row = scanline_ / 8;
-
-        //   if (column % 4 / 2 == 0) {
-        //     // Left
-        //     if (row % 4 / 2 == 0) {
-        //       // Top left
-        //       palette_idx = (attr & 0x3) * 4;
-        //     } else {
-        //       // Bottom left
-        //       palette_idx = ((attr & 0x30) >> 4) * 4;
-        //     }
-        //   } else {
-        //     // Right
-        //     if (row % 4 / 2 == 0) {
-        //       // Top right
-        //       palette_idx = ((attr & 0xC) >> 2) * 4;
-        //     } else {
-        //       // Bottom right
-        //       palette_idx = ((attr & 0xC0) >> 6) * 4;
-        //     }
-        //   }
-
-        //   uint16_t nm_addr = base_addr + (cycles_ - 1) / 8 + scanline_ / 8 * 32;
-        //   uint8_t tile_id = ReadVRAM(nm_addr);
-
-        //   uint16_t pattern_addr = PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000;
-
-        //   uint16_t tile_addr = tile_id * 16 + pattern_addr + scanline_ % 8;
-
-        //   uint8_t plane0 = cartridge_.chr_rom[tile_addr];
-        //   uint8_t plane1 = cartridge_.chr_rom[tile_addr + 8];
-
-        //   const int kCellSize = 2; // TODO(yangsiyu): Fit to window.
-
-        //   for (int k = 7; k >= 0; --k) {
-        //     uint8_t plane0_bit = (plane0 >> k) & 0x1;
-        //     uint8_t plane1_bit = (plane1 >> k) & 0x1;
-        //     uint8_t color_idx = plane0_bit + plane1_bit * 2;
-
-        //     // TODO(yangsiyu): Make this to a single frame data.
-
-        //     uint8_t colorid = ReadVRAM(0x3F00 + palette_idx + color_idx);
-        //     DrawRectangle((cycles_ - 1) / 8 * kCellSize * 8 + (7 - k) * kCellSize,
-        //                   scanline_ * kCellSize,
-        //                   kCellSize, kCellSize, kColors[colorid]);
-        //   }
-        // }
       }
     }
   }
@@ -264,8 +213,8 @@ void PPU::TestRenderNametable(uint16_t addr) {
   };
   for (int i = addr; i < addr + 0x0400; i++) {
     uint8_t tile_id = ReadVRAM(i);
-    int x = (i - 0x2000) % 32;
-    int y = (i - 0x2000) / 32;
+    int x = (i - addr) % 32;
+    int y = (i - addr) / 32;
     for (int j = tile_id * 16; j < tile_id * 16 + 8; ++j) {
       uint8_t plane0 = cartridge_.chr_rom[j];
       uint8_t plane1 = cartridge_.chr_rom[j + 8];
@@ -354,8 +303,8 @@ void PPU::IncrementVerticalV() {
       y = 0;                                    // coarse Y = 0, nametable not switched
     } else {
       y += 1;                                   // increment coarse Y
-      v.raw = (v.raw & ~0x03E0) | (y << 5);     // put coarse Y back into v
     }
+    v.raw = (v.raw & ~0x03E0) | (y << 5);     // put coarse Y back into v
   }
 }
 

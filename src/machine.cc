@@ -58,7 +58,7 @@ int Machine::Run() {
       }
       while(--cpu_.cycles > 0);
     }
-    // ppu_.TestRenderNametable(0x2000);
+    // ppu_.TestRenderNametable(0x2400);
     EndMode2D();
     EndDrawing();
   }
