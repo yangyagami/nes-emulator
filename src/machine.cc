@@ -15,7 +15,7 @@ Machine::Machine(const std::string &path)
 
 int Machine::Run() {
   InitWindow(800, 600, "nes emulator");
-  SetTargetFPS(60);
+  SetTargetFPS(120);
 
   if (!cartridge_.LoadRomFile(rom_path_)) {
     return -1;
