@@ -35,6 +35,9 @@ class PPU {
   uint8_t ReadVRAM(uint16_t addr);
   void WriteVRAM(uint16_t addr, uint8_t v);
 
+  void IncrementHorizontalV();
+  void IncrementVerticalV();
+
  private:
   // See https://www.nesdev.org/wiki/PPU_registers#PPUCTRL
   union {
@@ -89,6 +92,14 @@ class PPU {
   } v, t;
   uint8_t x;
   uint8_t w;
+
+  uint16_t bg_ls_shift;
+  uint16_t bg_ms_shift;
+
+  uint8_t tile_id;
+  uint8_t attr;
+  uint8_t bg_pattern_ls;
+  uint8_t bg_pattern_ms;
 
   std::array<uint8_t, 0x0800> vram_;
   std::array<uint8_t, 0x20> palettes_;

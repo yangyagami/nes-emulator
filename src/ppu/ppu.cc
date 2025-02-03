@@ -40,6 +40,7 @@ void PPU::Write(uint16_t addr, uint8_t value) {
       if (w == 1) {
         t.raw |= value;
         v.raw = t.raw;
+
         w = 0;
       } else {
         // Clear first, then write.
@@ -90,17 +91,66 @@ uint8_t PPU::Read(uint16_t addr) {
 void PPU::Tick() {
   one_frame_finished_ = false;
 
+  if (PPUMASK.BACKGROUND_RENDERING && scanline_ >= -1 && scanline_ <= 239) {
+    switch (cycles_ % 8) {
+      case 2: {  // Nametable
+        uint16_t nm_addr = 0x2000 | (v.raw & 0x0FFF);
+        tile_id = ReadVRAM(nm_addr);
+        break;
+      }
+      case 4: {  // Attribute
+        uint16_t attr_addr =
+            0x23C0 | (v.raw & 0x0C00) | ((v.raw >> 4) & 0x38) | ((v.raw >> 2) & 0x07);
+        attr = ReadVRAM(attr_addr);
+        break;
+      }
+      case 6: {  // BG lsbits
+        bg_pattern_ls =
+            ReadVRAM(PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000 + tile_id * 16 + v.FINE_Y);
+        break;
+      }
+      case 7: {  // BG msbits && IncrementHorizontalV
+        bg_pattern_ms = ReadVRAM(
+            PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000 + tile_id * 16 + v.FINE_Y + 8);
+        break;
+      }
+    }
+
+    if (cycles_ % 8 == 0 && cycles_ / 8 > 0) {
+      bg_ls_shift = (bg_ls_shift & 0xFF00) | bg_pattern_ls;
+      bg_ms_shift = (bg_ms_shift & 0xFF00) | bg_pattern_ms;
+      IncrementHorizontalV();
+    }
+
+    if (cycles_ == 256) {
+      IncrementVerticalV();
+    }
+
+    if (cycles_ == 257) {
+      v.COARSE_X = t.COARSE_X;
+      uint8_t mask = 0x01;
+      v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
+    }
+  }
+
+  // Pre scanline
   if (scanline_ == -1 || scanline_ == kScanLine) {
     // TODO(yangsiyu):
     if (cycles_ == 1) {
       PPUSTATUS.VBLANK = 0;
     }
-    if (cycles_ == 304) {
-      v.COARSE_Y = t.COARSE_Y;
-      v.NAMETABLE = (v.NAMETABLE & 0x01) | (t.NAMETABLE & 0x02);
-      v.FINE_Y = t.FINE_Y;
+
+    if (PPUMASK.BACKGROUND_RENDERING) {
+      if (cycles_ >= 280 && cycles_ <= 304) {
+        v.COARSE_Y = t.COARSE_Y;
+        uint8_t mask = 0x2;
+        v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
+        v.FINE_Y = t.FINE_Y;
+      }
     }
   }
+
+  // VBLANK
   if (scanline_ == 241 && cycles_ == 1) {
     PPUSTATUS.VBLANK = 1;
     if (PPUCTRL.VBLANK_NMI) {
@@ -111,73 +161,26 @@ void PPU::Tick() {
   if (scanline_ >= 0 && scanline_ <= 239) {
     if (cycles_ >= 1 && cycles_ <= 256) {
       if (PPUMASK.BACKGROUND) {
-        // Picked from https://www.nesdev.org/wiki/PPU_scrolling#Coarse_X_increment
-        x++;
-        if (x > 7) {
-          x = 0;
-          if ((v.raw & 0x001F) == 31) {// if coarse X == 31
-            v.raw &= ~0x001F;          // coarse X = 0
-            v.raw ^= 0x0400;           // switch horizontal nametable
-          } else {
-            v.raw += 1;                // increment coarse X
-          }
-        }
-        if (cycles_ == 256) {
-          if ((v.raw & 0x7000) != 0x7000) {        // if fine Y < 7
-            v.raw += 0x1000;                      // increment fine Y
-          } else {
-            v.raw &= ~0x7000;                     // fine Y = 0
+        uint8_t plane0 = (bg_ls_shift & 0x80) >> 7;
+        uint8_t plane1 = (bg_ms_shift & 0x80) >> 7;
 
-            int y = (v.raw & 0x03E0) >> 5;        // let y = coarse Y
+        const int kCellSize = 2;
 
-            if (y == 29) {
-              y = 0;                          // coarse Y = 0
-              v.raw ^= 0x0800;                    // switch vertical nametable
-            } else if (y == 31) {
-              y = 0;                          // coarse Y = 0, nametable not switched
-            } else {
-              y += 1;                         // increment coarse Y
-              v.raw = (v.raw & ~0x03E0) | (y << 5);     // put coarse Y back into v
-            }
-          }
-        }
+        Color colors[] = {
+          BLACK,
+          BLUE,
+          RED,
+          WHITE,
+        };
 
-        if (cycles_ % 8 == 0) {
-          uint16_t nm_address = 0x2000 | (v.raw & 0x0FFF);
-          uint16_t attr_address = 0x23C0 | (v.raw & 0x0C00) | ((v.raw >> 4) & 0x38) | ((v.raw >> 2) & 0x07);
+        bg_ls_shift <<= 1;
+        bg_ms_shift <<= 1;
 
-          uint8_t tile_id = ReadVRAM(nm_address);
-          uint8_t attr_id = ReadVRAM(attr_address);
+        uint8_t colorid = plane0 + plane1 * 2;
 
-          uint16_t pattern_addr = PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000;
-
-          uint16_t tile_addr = tile_id * 16 + pattern_addr + scanline_ % 8;
-
-          uint8_t plane0 = cartridge_.chr_rom[tile_addr];
-          uint8_t plane1 = cartridge_.chr_rom[tile_addr + 8];
-
-          const int kCellSize = 2; // TODO(yangsiyu): Fit to window.
-
-          Color colors[] = {
-            BLACK,
-            BLUE,
-            RED,
-            WHITE,
-          };
-
-          for (int k = 7; k >= 0; --k) {
-            uint8_t plane0_bit = (plane0 >> k) & 0x1;
-            uint8_t plane1_bit = (plane1 >> k) & 0x1;
-            uint8_t color_idx = plane0_bit + plane1_bit * 2;
-
-            // TODO(yangsiyu): Make this to a single frame data.
-
-            DrawRectangle((cycles_ - 1) / 8 * kCellSize * 8 + (7 - k) * kCellSize,
-                          scanline_ * kCellSize,
-                          kCellSize, kCellSize, colors[color_idx]);
-          }
-        }
-
+        DrawRectangle(cycles_ * kCellSize,
+                      scanline_ * kCellSize,
+                      kCellSize, kCellSize, kColors[colorid]);
 
         // See https://www.nesdev.org/wiki/PPU_rendering#Visible_scanlines_(0-239)
         // if (cycles_ % 8 == 0) {
@@ -238,12 +241,6 @@ void PPU::Tick() {
         // }
       }
     }
-    if (cycles_ == 257) {
-      if (PPUMASK.BACKGROUND) {
-        v.COARSE_X = t.COARSE_X;
-        v.NAMETABLE = t.NAMETABLE & 0x1;
-      }
-    }
   }
 
   cycles_++;
@@ -287,8 +284,8 @@ void PPU::TestRenderNametable(uint16_t addr) {
 }
 
 uint8_t PPU::ReadVRAM(uint16_t addr) {
-  if (addr <= 0x0FFF) {
-    // PATTERN TABLE 0
+  if (addr <= 0x1FFF) {
+    // PATTERN TABLE
     return cartridge_.chr_rom[addr];
   } else if (addr >= 0x2000 && addr <= 0x23FF) {
     return vram_[addr - 0x2000];
@@ -330,6 +327,35 @@ void PPU::WriteVRAM(uint16_t addr, uint8_t v) {
     nes_assert(false, std::format("Unsupported vram write for vertical mirroring: {:#x}", addr));
   } else {
     nes_assert(false, std::format("Unsupported vram write: {:#x}", addr));
+  }
+}
+
+void PPU::IncrementHorizontalV() {
+  if ((v.raw & 0x001F) == 31) {  // if coarse X == 31
+    v.raw &= ~0x001F;            // coarse X = 0
+    v.raw ^= 0x0400;             // switch horizontal nametable
+  } else {
+    v.raw += 1;                  // increment coarse X
+  }
+}
+
+void PPU::IncrementVerticalV() {
+  if ((v.raw & 0x7000) != 0x7000) {             // if fine Y < 7
+    v.raw += 0x1000;                            // increment fine Y
+  } else {
+    v.raw &= ~0x7000;                           // fine Y = 0
+
+    int y = (v.raw & 0x03E0) >> 5;              // let y = coarse Y
+
+    if (y == 29) {
+      y = 0;                                    // coarse Y = 0
+      v.raw ^= 0x0800;                          // switch vertical nametable
+    } else if (y == 31) {
+      y = 0;                                    // coarse Y = 0, nametable not switched
+    } else {
+      y += 1;                                   // increment coarse Y
+      v.raw = (v.raw & ~0x03E0) | (y << 5);     // put coarse Y back into v
+    }
   }
 }
 
