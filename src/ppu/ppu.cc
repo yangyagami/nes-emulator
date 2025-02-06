@@ -100,6 +100,11 @@ void PPU::Tick() {
           break;
         }
         case 4: {  // Attribute
+          /*
+            (v.raw & 0x0C00) pick selected nametable.
+            (v.raw >> 4) & 0x38 pick 8 bit, that contains coarse y.
+            (v.raw >> 2) & 0x07 pick 8 bit, that contains coarse x.
+          */
           uint16_t attr_addr =
               0x23C0 | (v.raw & 0x0C00) | ((v.raw >> 4) & 0x38) | ((v.raw >> 2) & 0x07);
           attr = ReadVRAM(attr_addr);
