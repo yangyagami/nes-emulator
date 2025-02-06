@@ -91,8 +91,13 @@ uint8_t PPU::Read(uint16_t addr) {
 void PPU::Tick() {
   one_frame_finished_ = false;
 
-  if (PPUMASK.BACKGROUND_RENDERING && scanline_ >= -1 && scanline_ <= 239) {
-    if (cycles_ >= 0 && cycles_ <= 256 || cycles_ >= 321 || cycles_ <= 336) {
+  if (PPUMASK.BACKGROUND_RENDERING && scanline_ >= 0 && scanline_ <= 239) {
+    // See https://www.nesdev.org/w/images/default/4/4f/Ppu.svg
+    if (cycles_ >= 1 && cycles_ <= 256 || cycles_ >= 321 || cycles_ <= 336) {
+      // Transfer to high 8 bit.
+      bg_ls_shift <<= 1;
+      bg_ms_shift <<= 1;
+
       switch (cycles_ % 8) {
         case 2: {  // Nametable
           uint16_t nm_addr = 0x2000 | (v.raw & 0x0FFF);
@@ -124,7 +129,7 @@ void PPU::Tick() {
     }
 
     if (cycles_ >= 328 || cycles_ <= 256) {
-      if (cycles_ % 8 == 0 && cycles_ / 8 > 0) {
+      if (cycles_ % 8 == 0 && cycles_ / 8 > 0) {  // cycles 0 idle on background.
         bg_ls_shift = (bg_ls_shift & 0xFF00) | bg_pattern_ls;
         bg_ms_shift = (bg_ms_shift & 0xFF00) | bg_pattern_ms;
         IncrementHorizontalV();
@@ -140,22 +145,20 @@ void PPU::Tick() {
       uint8_t mask = 0x01;
       v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
     }
-
-    if (scanline_ == -1) {
-      if (cycles_ >= 280 && cycles_ <= 304) {
-        v.COARSE_Y = t.COARSE_Y;
-        uint8_t mask = 0x2;
-        v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
-        v.FINE_Y = t.FINE_Y;
-      }
-    }
   }
 
   // Pre scanline
-  if (scanline_ == -1 || scanline_ == kScanLine) {
+  if (scanline_ == kScanLine) {
     // TODO(yangsiyu):
     if (cycles_ == 1) {
       PPUSTATUS.VBLANK = 0;
+    }
+
+    if (cycles_ >= 280 && cycles_ <= 304 && PPUMASK.BACKGROUND_RENDERING) {
+      v.COARSE_Y = t.COARSE_Y;
+      uint8_t mask = 0x2;
+      v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
+      v.FINE_Y = t.FINE_Y;
     }
   }
 
@@ -183,9 +186,6 @@ void PPU::Tick() {
           WHITE,
         };
 
-        bg_ls_shift <<= 1;
-        bg_ms_shift <<= 1;
-
         uint8_t colorid = plane0 + plane1 * 2;
 
         DrawRectangle(cycles_ * kCellSize,
@@ -201,7 +201,7 @@ void PPU::Tick() {
   if (cycles_ > kCycles) {
     scanline_++;
     if (scanline_ > kScanLine) {
-      scanline_ = -1;
+      scanline_ = 0;
       one_frame_finished_ = true;
     }
     cycles_ = 0;

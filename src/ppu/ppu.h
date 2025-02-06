@@ -126,7 +126,7 @@ class PPU {
 
   bool one_frame_finished_;
 
-  int scanline_ = -1;
+  int scanline_ = 0;
   int cycles_ = 0;
 
   Cpu &cpu_;
