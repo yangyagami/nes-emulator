@@ -26,24 +26,7 @@ int Machine::Run() {
   cpu_.PC = bus_.CpuRead16Bit(0xFFFC);
   cpu_.SP = 0xFD;
 
-  Camera2D camera;
-  camera.zoom = 1.0f;
-
   while (!WindowShouldClose()) {
-    float camera_speed = 120.0f;
-
-    if (IsKeyDown(KEY_D)) {
-      camera.offset.x -= camera_speed;
-    } else if (IsKeyDown(KEY_A)) {
-      camera.offset.x += camera_speed;
-    }
-
-    if (IsKeyDown(KEY_W)) {
-      camera.offset.y += camera_speed;
-    } else if (IsKeyDown(KEY_S)) {
-      camera.offset.y -= camera_speed;
-    }
-
     bool out = false;
     while (!out) {
       cpu_.Tick();
@@ -59,16 +42,15 @@ int Machine::Run() {
     BeginDrawing();
     ClearBackground(BLACK);
 
-    BeginMode2D(camera);
-    const int kCellSize = 2;
+    const int kCellWidth = GetRenderWidth() / 256;
+    const int kCellHeight = GetRenderHeight() / 240;
     for (int y = 0; y < 240; ++y) {
       for (int x = 0; x < 256; ++x) {
-        DrawRectangle(x * kCellSize, y * kCellSize, kCellSize, kCellSize,
+        DrawRectangle(x * kCellWidth, y * kCellHeight, kCellWidth, kCellHeight,
                       ppu_.pixels()[y * 256 + x]);
       }
     }
     // ppu_.TestRenderNametable(0x2400);
-    EndMode2D();
     EndDrawing();
   }
   return 0;
