@@ -89,14 +89,44 @@ uint8_t PPU::Read(uint16_t addr) {
 }
 
 void PPU::Tick() {
+  /*
+    Picked from nesdev:
+    The PPU renders 262 scanlines per frame.
+    Each scanline lasts for 341 PPU clock cycles (113.667 CPU clock cycles; 1 CPU cycle = 3 PPU cycles),
+    with each clock cycle producing one pixel.
+    The line numbers given here correspond to how the internal PPU frame counters count lines.
+   */
   one_frame_finished_ = false;
 
   if (PPUMASK.BACKGROUND_RENDERING && scanline_ >= 0 && scanline_ <= 239) {
     // See https://www.nesdev.org/w/images/default/4/4f/Ppu.svg
     if (cycles_ >= 1 && cycles_ <= 256 || cycles_ >= 321 || cycles_ <= 336) {
+      uint16_t mask = (0x8000 >> x);
+      uint8_t plane0 = (bg_ls_shift & mask) > 0;
+      uint8_t plane1 = (bg_ms_shift & mask) > 0;
+
+      mask = (0x80 >> x);
+      uint8_t als = (attr_ls_shift & mask) > 0;
+      uint8_t mls = (attr_ms_shift & mask) > 0;
+
+      const int kCellSize = 2;
+
+      uint8_t palette_idx = plane0 + plane1 * 2;
+      uint8_t coloridx = ReadVRAM(0x3F00 + (mls * 2 + als) * 4 + palette_idx);
+
+      DrawRectangle((cycles_ - 1) * kCellSize,
+                    scanline_ * kCellSize,
+                    kCellSize, kCellSize, kColors[coloridx]);
+
+      // Shift registers stuff.
       // Transfer to high 8 bit.
       bg_ls_shift <<= 1;
       bg_ms_shift <<= 1;
+
+      attr_ls_shift <<= 1;
+      attr_ms_shift <<= 1;
+      attr_ls_shift |= attr_ls_latch;
+      attr_ms_shift |= attr_ms_latch;
 
       switch (cycles_ % 8) {
         case 2: {  // Nametable
@@ -132,6 +162,14 @@ void PPU::Tick() {
       if (cycles_ % 8 == 0 && cycles_ / 8 > 0) {  // cycles 0 idle on background.
         bg_ls_shift = (bg_ls_shift & 0xFF00) | bg_pattern_ls;
         bg_ms_shift = (bg_ms_shift & 0xFF00) | bg_pattern_ms;
+
+        int coarse_x = (v.COARSE_X >> 1) & 0x1;
+        int coarse_y = (v.COARSE_Y >> 1) & 0x1;
+
+        int offset = coarse_y * 4 + coarse_x * 2;
+        attr_ls_latch = (attr >> offset) & 0x1;
+        attr_ms_latch = (attr >> (offset + 1)) & 0x1;
+
         IncrementHorizontalV();
       }
 
@@ -167,33 +205,6 @@ void PPU::Tick() {
     PPUSTATUS.VBLANK = 1;
     if (PPUCTRL.VBLANK_NMI) {
       cpu_.nmi_flipflop = true;
-    }
-  }
-
-  if (scanline_ >= 0 && scanline_ <= 239) {
-    if (cycles_ >= 1 && cycles_ <= 256) {
-      if (PPUMASK.BACKGROUND) {
-        uint16_t mask = (0x8000 >> x);
-        uint8_t plane0 = (bg_ls_shift & mask) > 0;
-        uint8_t plane1 = (bg_ms_shift & mask) > 0;
-
-        const int kCellSize = 2;
-
-        Color colors[] = {
-          BLACK,
-          BLUE,
-          BLACK,
-          WHITE,
-        };
-
-        uint8_t colorid = plane0 + plane1 * 2;
-
-        DrawRectangle(cycles_ * kCellSize,
-                      scanline_ * kCellSize,
-                      kCellSize, kCellSize, colors[colorid]);
-
-        // See https://www.nesdev.org/wiki/PPU_rendering#Visible_scanlines_(0-239)
-      }
     }
   }
 

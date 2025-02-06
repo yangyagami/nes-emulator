@@ -95,6 +95,10 @@ class PPU {
 
   uint16_t bg_ls_shift;
   uint16_t bg_ms_shift;
+  uint8_t attr_ls_shift;
+  uint8_t attr_ms_shift;
+  uint8_t attr_ls_latch;
+  uint8_t attr_ms_latch;
 
   uint8_t tile_id;
   uint8_t attr;
