@@ -43,10 +43,7 @@ int Machine::Run() {
     } else if (IsKeyDown(KEY_S)) {
       camera.offset.y -= camera_speed;
     }
-    BeginDrawing();
-    ClearBackground(BLACK);
 
-    BeginMode2D(camera);
     bool out = false;
     while (!out) {
       cpu_.Tick();
@@ -57,6 +54,18 @@ int Machine::Run() {
         }
       }
       while(--cpu_.cycles > 0);
+    }
+
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    BeginMode2D(camera);
+    const int kCellSize = 2;
+    for (int y = 0; y < 240; ++y) {
+      for (int x = 0; x < 256; ++x) {
+        DrawRectangle(x * kCellSize, y * kCellSize, kCellSize, kCellSize,
+                      ppu_.pixels()[y * 256 + x]);
+      }
     }
     // ppu_.TestRenderNametable(0x2400);
     EndMode2D();

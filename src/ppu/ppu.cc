@@ -100,7 +100,7 @@ void PPU::Tick() {
 
   if (PPUMASK.BACKGROUND_RENDERING && scanline_ >= 0 && scanline_ <= 239) {
     // See https://www.nesdev.org/w/images/default/4/4f/Ppu.svg
-    if (cycles_ >= 1 && cycles_ <= 256 || cycles_ >= 321 || cycles_ <= 336) {
+    if ((cycles_ >= 1 && cycles_ <= 256) || cycles_ >= 321 || cycles_ <= 336) {
       uint16_t mask = (0x8000 >> x);
       uint8_t plane0 = (bg_ls_shift & mask) > 0;
       uint8_t plane1 = (bg_ms_shift & mask) > 0;
@@ -109,14 +109,16 @@ void PPU::Tick() {
       uint8_t als = (attr_ls_shift & mask) > 0;
       uint8_t mls = (attr_ms_shift & mask) > 0;
 
-      const int kCellSize = 2;
-
       uint8_t palette_idx = plane0 + plane1 * 2;
       uint8_t coloridx = ReadVRAM(0x3F00 + (mls * 2 + als) * 4 + palette_idx);
 
-      DrawRectangle((cycles_ - 1) * kCellSize,
-                    scanline_ * kCellSize,
-                    kCellSize, kCellSize, kColors[coloridx]);
+      if (cycles_ >= 1 && cycles_ <= 256) {
+        pixels_[scanline_ * 256 + (cycles_ - 1)] = kColors[coloridx];
+      }
+
+      // DrawRectangle((cycles_ - 1) * kCellSize,
+      //               scanline_ * kCellSize,
+      //               kCellSize, kCellSize, kColors[coloridx]);
 
       // Shift registers stuff.
       // Transfer to high 8 bit.

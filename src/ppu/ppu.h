@@ -27,6 +27,7 @@ class PPU {
   void Tick();
 
   bool one_frame_finished() const { return one_frame_finished_; }
+  const std::array<Color, 256 * 240> &pixels() const { return pixels_; }
 
   // These functions just for test.
   void TestRenderNametable(uint16_t addr);
@@ -107,6 +108,8 @@ class PPU {
 
   std::array<uint8_t, 0x0800> vram_;
   std::array<uint8_t, 0x20> palettes_;
+
+  std::array<Color, 256 * 240> pixels_;
 
   // I copied from https://bugzmanov.github.io/nes_ebook/chapter_6_3.html
   const std::array<Color, 0x40> kColors = {
