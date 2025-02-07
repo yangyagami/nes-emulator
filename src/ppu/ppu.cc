@@ -58,10 +58,6 @@ void PPU::Write(uint16_t addr, uint8_t value) {
       v.raw += (PPUCTRL.VRAM_ADDR == 0 ? 1 : 32);
       break;
     }
-    case 0x4014: {
-      OAMDMA = value;
-      break;
-    }
     default: {
       nes_assert(false, std::format("Unsupported ppu write: {:#x}\n", addr));
       break;

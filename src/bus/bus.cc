@@ -19,11 +19,19 @@ void Bus::CpuWrite8Bit(uint16_t address, uint8_t value) {
     memory_[address - 0x1000] = value;
   } else if (address >= 0x1800 && address <= 0x1FFF) {
     memory_[address - 0x1800] = value;
-  } else if ((address >= 0x2000 && address <= 0x2007) || address == 0x4014) {
+  } else if ((address >= 0x2000 && address <= 0x2007)) {
     // PPU
     ppu_.Write(address, value);
   } else if (address >= 0x4000 && address <= 0x4017) {
     // TODO(yangsiyu):
+    if (address == 0x4014) {  // OAMDMA
+      std::copy(memory_.begin() + (value << 8),
+                memory_.begin() + (value << 8) + 256,
+                ppu_.OAM.begin());
+    } else {
+      // TODO(yangsiyu):
+      // nes_assert(false, std::format("Unsupported write: {:#x}", address));
+    }
   } else if (address >= 0x4020) {
     // Cartridge
     nes_assert(false, std::format("Unsupported write: {:#x}", address));

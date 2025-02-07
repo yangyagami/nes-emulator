@@ -32,6 +32,9 @@ class PPU {
   // These functions just for test.
   void TestRenderNametable(uint16_t addr);
 
+ public:
+  std::array<uint8_t, 256> OAM;
+
  private:
   uint8_t ReadVRAM(uint16_t addr);
   void WriteVRAM(uint16_t addr, uint8_t v);
@@ -78,7 +81,6 @@ class PPU {
   } PPUSTATUS;
 
   uint8_t OAMADDR;
-  uint8_t OAMDMA;
 
   // See https://www.nesdev.org/wiki/PPU_registers#Internal_registers
   // TODO(yangsiyu): Change this to portable
