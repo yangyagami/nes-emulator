@@ -24,6 +24,10 @@ void PPU::Write(uint16_t addr, uint8_t value) {
       OAMADDR = value;
       break;
     }
+    case 0x2004: {
+      OAM[OAMADDR++] = value;
+      break;
+    }
     case 0x2005: {
       if (w == 1) {
         t.COARSE_Y = value >> 3;
