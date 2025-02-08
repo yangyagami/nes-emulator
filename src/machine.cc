@@ -51,6 +51,7 @@ int Machine::Run() {
       }
     }
     // ppu_.TestRenderNametable(0x2400);
+    ppu_.TestRenderSprite();
     EndDrawing();
   }
   return 0;

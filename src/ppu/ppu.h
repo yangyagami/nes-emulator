@@ -31,6 +31,7 @@ class PPU {
 
   // These functions just for test.
   void TestRenderNametable(uint16_t addr);
+  void TestRenderSprite();
 
  public:
   std::array<uint8_t, 256> OAM;

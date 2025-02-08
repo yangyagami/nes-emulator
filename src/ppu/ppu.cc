@@ -250,6 +250,86 @@ void PPU::TestRenderNametable(uint16_t addr) {
   }
 }
 
+void PPU::TestRenderSprite() {
+  const int kCellSize = 2;
+  Color colors[] = {
+    BLACK,
+    WHITE,
+    BLUE,
+    RED,
+  };
+
+  for (int i = 0; i < OAM.size(); i += 4) {
+    uint8_t sy = OAM[i];
+    uint8_t sx = OAM[i + 3];
+
+    uint8_t tile_id = OAM[i + 1];
+    // uint8_t pattern_addr = (OAM[i + 1] & 0x1) * 0x1000;
+    uint16_t pattern_addr = 0x1000;
+    uint8_t flip_h = (OAM[i + 2] >> 6) & 0x1;
+    uint8_t flip_v = (OAM[i + 2] >> 7) & 0x1;
+
+    if (!flip_v) {
+      // Top
+      for (int j = tile_id * 16; j < tile_id * 16 + 8; ++j) {
+        uint8_t plane0 = cartridge_.chr_rom[pattern_addr + j];
+        uint8_t plane1 = cartridge_.chr_rom[pattern_addr + j + 8];
+
+        if (!flip_h) {
+          for (int k = 7; k >= 0; --k) {
+            uint8_t plane0_bit = (plane0 >> k) & 0x1;
+            uint8_t plane1_bit = (plane1 >> k) & 0x1;
+            uint8_t color_idx = plane0_bit + plane1_bit * 2;
+
+            DrawRectangle(sx * kCellSize + (7 - k) * kCellSize,
+                          sy * kCellSize + (j - tile_id * 16) * kCellSize,
+                          kCellSize, kCellSize, colors[color_idx]);
+          }
+        } else {
+          for (int k = 0; k < 8; ++k) {
+            uint8_t plane0_bit = (plane0 >> k) & 0x1;
+            uint8_t plane1_bit = (plane1 >> k) & 0x1;
+            uint8_t color_idx = plane0_bit + plane1_bit * 2;
+
+            DrawRectangle(sx * kCellSize + k * kCellSize,
+                          sy * kCellSize + (j - tile_id * 16) * kCellSize,
+                          kCellSize, kCellSize, colors[color_idx]);
+          }
+        }
+      }
+
+      tile_id += 1;
+      // Bottom
+      for (int j = tile_id * 16; j < tile_id * 16 + 8; ++j) {
+        uint8_t plane0 = cartridge_.chr_rom[pattern_addr + j];
+        uint8_t plane1 = cartridge_.chr_rom[pattern_addr + j + 8];
+
+        if (!flip_h) {
+          for (int k = 7; k >= 0; --k) {
+            uint8_t plane0_bit = (plane0 >> k) & 0x1;
+            uint8_t plane1_bit = (plane1 >> k) & 0x1;
+            uint8_t color_idx = plane0_bit + plane1_bit * 2;
+
+            DrawRectangle(sx * kCellSize + (7 - k) * kCellSize,
+                          sy + (8 * kCellSize) + (j - tile_id * 16) * kCellSize,
+                          kCellSize, kCellSize, colors[color_idx]);
+          }
+        } else {
+          for (int k = 0; k < 8; ++k) {
+            uint8_t plane0_bit = (plane0 >> k) & 0x1;
+            uint8_t plane1_bit = (plane1 >> k) & 0x1;
+            uint8_t color_idx = plane0_bit + plane1_bit * 2;
+
+            DrawRectangle(sx * kCellSize + k * kCellSize,
+                          sy + (8 * kCellSize) + (j - tile_id * 16) * kCellSize,
+                          kCellSize, kCellSize, colors[color_idx]);
+          }
+        }
+      }
+    }
+  }
+}
+
 uint8_t PPU::ReadVRAM(uint16_t addr) {
   if (addr <= 0x1FFF) {
     // PATTERN TABLE
