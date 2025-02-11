@@ -97,6 +97,12 @@ class PPU {
   uint8_t x;
   uint8_t w;
 
+  // Sprites stuff
+  // See https://www.nesdev.org/wiki/PPU_sprite_evaluation#References
+  uint8_t n = 0;
+  uint8_t m = 0;
+  uint8_t oam_data_latch_;
+
   uint16_t bg_ls_shift;
   uint16_t bg_ms_shift;
   uint8_t attr_ls_shift;
@@ -109,6 +115,9 @@ class PPU {
   uint8_t bg_pattern_ls;
   uint8_t bg_pattern_ms;
 
+  uint8_t oam_idx_ = 0;
+  bool n_overflow_ = false;
+  std::array<uint8_t, 4 * 8> oam_;
   std::array<uint8_t, 0x0800> vram_;
   std::array<uint8_t, 0x20> palettes_;
 

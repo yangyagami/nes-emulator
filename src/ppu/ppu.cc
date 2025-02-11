@@ -98,7 +98,65 @@ void PPU::Tick() {
    */
   one_frame_finished_ = false;
 
-  if (PPUMASK.BACKGROUND_RENDERING && scanline_ >= 0 && scanline_ <= 239) {
+  // Sprite evaluation
+  // See https://www.nesdev.org/wiki/PPU_sprite_evaluation#References
+  // if (scanline_ >= 1 && scanline_ <= 239) {
+  //   if (cycles_ >= 1 && cycles_ <= 64) {
+  //     if (cycles_ % 8 == 0) {
+  //       oam_[cycles / 8 - 1] = 0xFF;
+  //     }
+  //   } else if (cycles >= 65 && cycles <= 256) {
+  //     if (cycles % 2 != 0) {  // odd cycles
+  //       oam_data_latch_ = OAM[n * 4 + m];
+  //     } else {  // even cycles
+  //       if (m == 0) {
+  //         // Y-coordinate
+  //         if (scanline_ >= oam_data_latch_ && scanline_ <= oam_data_latch_ + 8) {
+  //           PPUSTATUS.SPRITE_OVERFLOW = 1;
+  //         }
+  //       }
+
+  //       oam_[oam_idx_ * 4 + m] = oam_data_latch_;
+
+  //       m++;
+
+  //       if (m >= 4) {
+  //         oam_idx_++;
+  //         m = 0;
+  //         n++;
+  //       }
+
+  //       if (n >= 64) {
+  //         n = 0;
+  //         // Attempt (and fail) to copy OAM[n][0] into the next free slot in secondary OAM, and increment n (repeat until HBLANK is reached)
+  //       }
+  //       // uint8_t sy = oam_data_latch_ + 1;
+  //       // if (sy == scanline_) {
+  //       //   if (oam_idx_ < 8) {
+  //       //     // Not full
+  //       //     oam_[oam_idx_ * 4 + m] = oam_data_latch_;
+
+  //       //     m++;
+  //       //     if (m >= 3) {
+  //       //       oam_idx_++;
+  //       //       m = 0;
+  //       //       n++;
+  //       //     }
+  //       //   }
+  //       // } else {
+  //       //   n++;
+  //       //   m++;
+  //       // }
+  //       // if (n >= 64) {
+  //       //   n = 0;
+  //       // }
+  //     }
+  //   }
+  // }
+
+  // Background
+  if (PPUMASK.BACKGROUND_RENDERING &&
+      ((scanline_ >= 0 && scanline_ <= 239) || scanline_ == kScanLine)) {
     // See https://www.nesdev.org/w/images/default/4/4f/Ppu.svg
     if ((cycles_ >= 1 && cycles_ <= 256) || cycles_ >= 321 || cycles_ <= 336) {
       uint16_t mask = (0x8000 >> x);
@@ -185,6 +243,13 @@ void PPU::Tick() {
       uint8_t mask = 0x01;
       v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
     }
+
+    if (cycles_ >= 280 && cycles_ <= 304 && scanline_ == kScanLine) {
+      v.COARSE_Y = t.COARSE_Y;
+      uint8_t mask = 0x2;
+      v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
+      v.FINE_Y = t.FINE_Y;
+    }
   }
 
   // Pre scanline
@@ -192,13 +257,6 @@ void PPU::Tick() {
     // TODO(yangsiyu):
     if (cycles_ == 1) {
       PPUSTATUS.VBLANK = 0;
-    }
-
-    if (cycles_ >= 280 && cycles_ <= 304 && PPUMASK.BACKGROUND_RENDERING) {
-      v.COARSE_Y = t.COARSE_Y;
-      uint8_t mask = 0x2;
-      v.NAMETABLE = (v.NAMETABLE & ~mask) | (t.NAMETABLE & mask);
-      v.FINE_Y = t.FINE_Y;
     }
   }
 
@@ -213,6 +271,9 @@ void PPU::Tick() {
   cycles_++;
   if (cycles_ > kCycles) {
     scanline_++;
+    n_overflow_ = false;
+    n = 0;
+    m = 0;
     if (scanline_ > kScanLine) {
       scanline_ = 0;
       one_frame_finished_ = true;
@@ -298,34 +359,34 @@ void PPU::TestRenderSprite() {
         }
       }
 
-      tile_id += 1;
-      // Bottom
-      for (int j = tile_id * 16; j < tile_id * 16 + 8; ++j) {
-        uint8_t plane0 = cartridge_.chr_rom[pattern_addr + j];
-        uint8_t plane1 = cartridge_.chr_rom[pattern_addr + j + 8];
+      // tile_id += 1;
+      // // Bottom
+      // for (int j = tile_id * 16; j < tile_id * 16 + 8; ++j) {
+      //   uint8_t plane0 = cartridge_.chr_rom[pattern_addr + j];
+      //   uint8_t plane1 = cartridge_.chr_rom[pattern_addr + j + 8];
 
-        if (!flip_h) {
-          for (int k = 7; k >= 0; --k) {
-            uint8_t plane0_bit = (plane0 >> k) & 0x1;
-            uint8_t plane1_bit = (plane1 >> k) & 0x1;
-            uint8_t color_idx = plane0_bit + plane1_bit * 2;
+      //   if (!flip_h) {
+      //     for (int k = 7; k >= 0; --k) {
+      //       uint8_t plane0_bit = (plane0 >> k) & 0x1;
+      //       uint8_t plane1_bit = (plane1 >> k) & 0x1;
+      //       uint8_t color_idx = plane0_bit + plane1_bit * 2;
 
-            DrawRectangle(sx * kCellSize + (7 - k) * kCellSize,
-                          sy + (8 * kCellSize) + (j - tile_id * 16) * kCellSize,
-                          kCellSize, kCellSize, colors[color_idx]);
-          }
-        } else {
-          for (int k = 0; k < 8; ++k) {
-            uint8_t plane0_bit = (plane0 >> k) & 0x1;
-            uint8_t plane1_bit = (plane1 >> k) & 0x1;
-            uint8_t color_idx = plane0_bit + plane1_bit * 2;
+      //       DrawRectangle(sx * kCellSize + (7 - k) * kCellSize,
+      //                     sy + (8 * kCellSize) + (j - tile_id * 16) * kCellSize,
+      //                     kCellSize, kCellSize, colors[color_idx]);
+      //     }
+      //   } else {
+      //     for (int k = 0; k < 8; ++k) {
+      //       uint8_t plane0_bit = (plane0 >> k) & 0x1;
+      //       uint8_t plane1_bit = (plane1 >> k) & 0x1;
+      //       uint8_t color_idx = plane0_bit + plane1_bit * 2;
 
-            DrawRectangle(sx * kCellSize + k * kCellSize,
-                          sy + (8 * kCellSize) + (j - tile_id * 16) * kCellSize,
-                          kCellSize, kCellSize, colors[color_idx]);
-          }
-        }
-      }
+      //       DrawRectangle(sx * kCellSize + k * kCellSize,
+      //                     sy + (8 * kCellSize) + (j - tile_id * 16) * kCellSize,
+      //                     kCellSize, kCellSize, colors[color_idx]);
+      //     }
+      //   }
+      // }
     }
   }
 }
