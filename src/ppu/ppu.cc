@@ -77,6 +77,9 @@ uint8_t PPU::Read(uint16_t addr) {
       w = 0;
       return ret;
     }
+    case 0x2005: {
+      return OAM[OAMADDR];
+    }
     case 0x2007: {
       uint8_t ret = ReadVRAM(v.raw);
       v.raw += (PPUCTRL.VRAM_ADDR == 0 ? 1 : 32);
@@ -100,83 +103,119 @@ void PPU::Tick() {
 
   // Sprite evaluation
   // See https://www.nesdev.org/wiki/PPU_sprite_evaluation#References
-  // if (scanline_ >= 1 && scanline_ <= 239) {
-  //   if (cycles_ >= 1 && cycles_ <= 64) {
-  //     if (cycles_ % 8 == 0) {
-  //       oam_[cycles / 8 - 1] = 0xFF;
-  //     }
-  //   } else if (cycles >= 65 && cycles <= 256) {
-  //     if (cycles % 2 != 0) {  // odd cycles
-  //       oam_data_latch_ = OAM[n * 4 + m];
-  //     } else {  // even cycles
-  //       if (m == 0) {
-  //         // Y-coordinate
-  //         if (scanline_ >= oam_data_latch_ && scanline_ <= oam_data_latch_ + 8) {
-  //           PPUSTATUS.SPRITE_OVERFLOW = 1;
-  //         }
-  //       }
+  if (scanline_ >= 1 && scanline_ <= 239) {
+    if (cycles_ >= 1 && cycles_ <= 64) {
+      if (cycles_ % 8 == 0) {
+        oam_[cycles_ / 8 - 1] = 0xFF;
+      }
+    } else if (cycles_ >= 65 && cycles_ <= 256) {
+      if (cycles_ % 2 != 0) {  // odd cycles
+        oam_data_latch_ = OAM[n * 4 + m];
+      } else {  // even cycles
+        switch (sprite_evaluation_state_) {
+          case kLessEight: {
+            if (m == 0) {
+              // Check y-coord whether in range.
+              if (scanline_ >= oam_data_latch_ &&
+                  scanline_ <= oam_data_latch_ + 8) {
+                oam_[oam_size_ * 4 + m] = oam_data_latch_;
+                m++;
+              } else {
+                m = 0;
+                n++;
 
-  //       oam_[oam_idx_ * 4 + m] = oam_data_latch_;
+                if (n >= 64) {
+                  sprite_evaluation_state_ = kFail;
+                }
+              }
+            } else {
+              oam_[oam_size_ * 4 + m] = oam_data_latch_;
+              m++;
+              if (m >= 4) {
+                m = 0;
+                n++;
+                oam_size_++;
+                if (n >= 64) {
+                  sprite_evaluation_state_ = kFail;
+                } else if (oam_size_ >= 8) {
+                  sprite_evaluation_state_ = kGreaterEight;
+                }
+              }
+            }
+            break;
+          }
+          case kGreaterEight: {
+            // We don't read oam.
+            if (m == 0) {
+              // Check y-coord whether in range.
+              if (scanline_ >= oam_data_latch_ &&
+                  scanline_ <= oam_data_latch_ + 8) {
+                PPUSTATUS.SPRITE_OVERFLOW = 1;
+                m++;
+              } else {
+                n++;
+                m++;
 
-  //       m++;
+                // Make sure the m not leaked
+                if (m >= 4) {
+                  m = 0;
+                }
 
-  //       if (m >= 4) {
-  //         oam_idx_++;
-  //         m = 0;
-  //         n++;
-  //       }
+                if (n >= 64) {
+                  sprite_evaluation_state_ = kFail;
+                  n = 0;
+                  m = 0;
+                }
+              }
+            } else {
+              m++;
+              if (m >= 4) {
+                m = 0;
+                n++;
+              }
+            }
+            break;
+          }
+          case kFail: {
+            // We just do nothing here.
+            break;
+          }
+        }
+      }
+    } else if (cycles_ >= 257 && cycles_ <= 320) {
+      if (cycles_ == 257) {
+        oam_idx_ = 0;
+      }
 
-  //       if (n >= 64) {
-  //         n = 0;
-  //         // Attempt (and fail) to copy OAM[n][0] into the next free slot in secondary OAM, and increment n (repeat until HBLANK is reached)
-  //       }
-  //       // uint8_t sy = oam_data_latch_ + 1;
-  //       // if (sy == scanline_) {
-  //       //   if (oam_idx_ < 8) {
-  //       //     // Not full
-  //       //     oam_[oam_idx_ * 4 + m] = oam_data_latch_;
-
-  //       //     m++;
-  //       //     if (m >= 3) {
-  //       //       oam_idx_++;
-  //       //       m = 0;
-  //       //       n++;
-  //       //     }
-  //       //   }
-  //       // } else {
-  //       //   n++;
-  //       //   m++;
-  //       // }
-  //       // if (n >= 64) {
-  //       //   n = 0;
-  //       // }
-  //     }
-  //   }
-  // }
+      int tmp = cycles_ % 8;
+      switch (cycles_ % 8) {
+        case 1: {
+          uint8_t sprite_y = oam_[oam_idx_ * 4 + (tmp - 1)];
+          break;
+        }
+      }
+    }
+  }
 
   // Background
   if (PPUMASK.BACKGROUND_RENDERING &&
       ((scanline_ >= 0 && scanline_ <= 239) || scanline_ == kScanLine)) {
     // See https://www.nesdev.org/w/images/default/4/4f/Ppu.svg
-    if ((cycles_ >= 1 && cycles_ <= 256) || cycles_ >= 321 || cycles_ <= 336) {
+    if ((cycles_ >= 1 && cycles_ <= 256) || (cycles_ >= 321 && cycles_ <= 336)) {
       uint16_t mask = (0x8000 >> x);
       uint8_t plane0 = (bg_ls_shift & mask) > 0;
       uint8_t plane1 = (bg_ms_shift & mask) > 0;
 
       mask = (0x80 >> x);
       uint8_t als = (attr_ls_shift & mask) > 0;
-      uint8_t mls = (attr_ms_shift & mask) > 0;
+      uint8_t ams = (attr_ms_shift & mask) > 0;
 
       uint8_t palette_idx = plane0 + plane1 * 2;
-      uint8_t coloridx = ReadVRAM(0x3F00 + (mls * 2 + als) * 4 + palette_idx);
+      uint8_t coloridx = ReadVRAM(0x3F00 + (ams * 2 + als) * 4 + palette_idx);
 
-      if (cycles_ >= 1 && cycles_ <= 256) {
+      if (cycles_ >= 1 && cycles_ <= 256 && scanline_ >= 0 && scanline_ <= 239) {
         pixels_[scanline_ * 256 + (cycles_ - 1)] = kColors[coloridx];
       }
-
-      // DrawRectangle((cycles_ - 1) * kCellSize,
-      //               scanline_ * kCellSize,
-      //               kCellSize, kCellSize, kColors[coloridx]);
 
       // Shift registers stuff.
       // Transfer to high 8 bit.
@@ -210,7 +249,7 @@ void PPU::Tick() {
               ReadVRAM(PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000 + tile_id * 16 + v.FINE_Y);
           break;
         }
-        case 7: {  // BG msbits && IncrementHorizontalV
+        case 7: {  // BG msbits
           bg_pattern_ms = ReadVRAM(
               PPUCTRL.BACKGROUND_PATTERN_ADDR * 0x1000 + tile_id * 16 + v.FINE_Y + 8);
           break;
@@ -271,6 +310,8 @@ void PPU::Tick() {
   cycles_++;
   if (cycles_ > kCycles) {
     scanline_++;
+    sprite_evaluation_state_ = kLessEight;
+    oam_size_ = 0;
     n_overflow_ = false;
     n = 0;
     m = 0;

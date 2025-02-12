@@ -115,7 +115,14 @@ class PPU {
   uint8_t bg_pattern_ls;
   uint8_t bg_pattern_ms;
 
+  enum SpriteEvaluation {
+    kLessEight = 0,
+    kGreaterEight,
+    kFail,
+  } sprite_evaluation_state_ = kLessEight;
+
   uint8_t oam_idx_ = 0;
+  uint8_t oam_size_ = 0;
   bool n_overflow_ = false;
   std::array<uint8_t, 4 * 8> oam_;
   std::array<uint8_t, 0x0800> vram_;

@@ -58,6 +58,9 @@ uint8_t Bus::CpuRead8Bit(uint16_t address) {
   } else if (address >= 0x2000 && address <= 0x2007) {
     // PPU
     return ppu_.Read(address);
+  } else if (address >= 0x2008 && address <= 0x3FFF) {
+    // Mirrors of $2000–$2007 (repeats every 8 bytes)
+    return ppu_.Read(0x2000 + (address - 0x2000) % 8);
   } else if (address >= 0x4000 && address <= 0x4017) {
     // TODO(yangsiyu):
     return 0;
