@@ -118,7 +118,7 @@ void PPU::Tick() {
               // Check y-coord whether in range.
               if (scanline_ >= oam_data_latch_ &&
                   scanline_ <= oam_data_latch_ + 8) {
-                oam_[oam_size_ * 4 + m] = oam_data_latch_;
+                oam_[(oam_size_ - 1) * 4 + m] = oam_data_latch_;
                 m++;
               } else {
                 m = 0;
@@ -129,7 +129,7 @@ void PPU::Tick() {
                 }
               }
             } else {
-              oam_[oam_size_ * 4 + m] = oam_data_latch_;
+              oam_[(oam_size_ - 1) * 4 + m] = oam_data_latch_;
               m++;
               if (m >= 4) {
                 m = 0;
@@ -137,7 +137,7 @@ void PPU::Tick() {
                 oam_size_++;
                 if (n >= 64) {
                   sprite_evaluation_state_ = kFail;
-                } else if (oam_size_ >= 8) {
+                } else if (oam_size_ > 8) {
                   sprite_evaluation_state_ = kGreaterEight;
                 }
               }
@@ -312,6 +312,7 @@ void PPU::Tick() {
     scanline_++;
     sprite_evaluation_state_ = kLessEight;
     oam_size_ = 0;
+    oam_size_ = 1;
     n_overflow_ = false;
     n = 0;
     m = 0;

@@ -51,6 +51,34 @@ void Cpu::Reset() {
   cycles = 0;
 }
 
+std::string Cpu::Disassemble(uint16_t address) {
+  uint8_t opcode = bus_.CpuRead8Bit(address);
+
+  nes_assert(kOpcodes.find(opcode) != kOpcodes.end(),
+             std::format("Invalid opcode: 0x{:02x}, PC: 0x{:04x}", opcode, PC));
+
+  Opcode opcode_obj = kOpcodes.find(opcode)->second;
+
+  std::string right;
+
+  switch (opcode_obj.addressing_mode) {
+    case kImmediate: {
+      right = std::format("{}", bus_.CpuRead8Bit(address + 1));
+      break;
+    }
+    case kImplicit: {
+      right = "";
+      break;
+    }
+    default: {
+      right = "UNKNOWN";
+      break;
+    }
+  }
+
+  return std::format("{} {}", opcode_obj.name, right);
+}
+
 uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
   uint16_t result = 0;
 

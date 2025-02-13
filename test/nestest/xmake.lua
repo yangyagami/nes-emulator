@@ -1,0 +1,5 @@
+target("nestest")
+add_deps("nes")
+set_kind("binary")
+add_files("main.cc")
+-- add_packages("raylib")

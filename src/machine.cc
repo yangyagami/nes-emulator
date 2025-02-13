@@ -7,15 +7,21 @@
 namespace nes {
 
 Machine::Machine(const std::string &path)
-    : bus_(memory_, cartridge_, ppu_, joypad_),
-      cpu_(bus_),
+    : cpu_(bus_),
       ppu_(cpu_, cartridge_),
       rom_path_(path) {
 }
 
 int Machine::Run() {
-  InitWindow(800, 600, "nes emulator");
-  SetTargetFPS(120);
+  const int kSW = 256 * 4;
+  const int kSH = 240 * 3;
+
+  InitWindow(kSW, kSH, "nes emulator");
+  SetTargetFPS(60);
+  SetWindowMinSize(kSW, kSH);
+  SetWindowMaxSize(kSW, kSH);
+
+  bus_.Connect(memory_, cartridge_, ppu_, joypad_);
 
   if (!cartridge_.LoadRomFile(rom_path_)) {
     return -1;
@@ -36,7 +42,7 @@ int Machine::Run() {
           out = true;
         }
       }
-      while(--cpu_.cycles > 0);
+      while (--cpu_.cycles > 0);
     }
 
     if (IsKeyDown(KEY_S)) {
@@ -68,16 +74,21 @@ int Machine::Run() {
     }
 
     BeginDrawing();
-    ClearBackground(BLACK);
+    ClearBackground(GRAY);
 
-    const int kCellWidth = GetRenderWidth() / 256;
-    const int kCellHeight = GetRenderHeight() / 240;
+    const float kGameWidth = GetRenderWidth() * 0.80f;
+
+    const float kCellWidth = kGameWidth / 256.0f;
+    const float kCellHeight = GetRenderHeight() / 240.0f;
+
     for (int y = 0; y < 240; ++y) {
       for (int x = 0; x < 256; ++x) {
-        DrawRectangle(x * kCellWidth, y * kCellHeight, kCellWidth, kCellHeight,
-                      ppu_.pixels()[y * 256 + x]);
+        Vector2 pos = { x * kCellWidth, y * kCellHeight };
+        Vector2 size = { kCellWidth, kCellHeight };
+        DrawRectangleV(pos, size, ppu_.pixels()[y * 256 + x]);
       }
     }
+
     // ppu_.TestRenderNametable(0x2000);
     // ppu_.TestRenderSprite();
     EndDrawing();

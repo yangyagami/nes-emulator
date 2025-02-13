@@ -70,6 +70,8 @@ struct Cpu {
   void Tick();
   void Reset();
 
+  std::string Disassemble(uint16_t address);
+
   uint16_t GetAddress(AddressingMode addressing_mode);
   void UpdateZeroAndNegativeFlag(uint8_t v);
   void UpdateOverflowFlag(uint8_t a, uint8_t b, uint8_t result);

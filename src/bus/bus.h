@@ -11,7 +11,7 @@
 namespace nes {
 class Bus {
  public:
-  Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge, PPU &ppu, Joypad &joypad);
+  void Connect(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge, PPU &ppu, Joypad &joypad);
 
   void CpuWrite8Bit(uint16_t address, uint8_t value);
 
@@ -22,10 +22,10 @@ class Bus {
   uint16_t CpuRead16Bit(uint16_t address);
 
  private:
-  std::array<uint8_t, 0x0800> &memory_;
-  Cartridge &cartridge_;
-  PPU &ppu_;
-  Joypad &joypad_;
+  std::array<uint8_t, 0x0800> *memory_;
+  Cartridge *cartridge_;
+  PPU *ppu_;
+  Joypad *joypad_;
 };
 }  // namespace nes
 
