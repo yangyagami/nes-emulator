@@ -5,7 +5,8 @@ add_files(
    "bus/*.cc",
    "utils/*.cc",
    "cartridge/*.cc",
-   "ppu/*.cc"
+   "ppu/*.cc",
+   "joypad/*.cc"
 )
 add_includedirs(".", { public = true })
 add_packages("raylib")

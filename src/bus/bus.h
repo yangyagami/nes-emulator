@@ -6,11 +6,12 @@
 
 #include "cartridge/cartridge.h"
 #include "ppu/ppu.h"
+#include "joypad/joypad.h"
 
 namespace nes {
 class Bus {
  public:
-  Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge, PPU &ppu);
+  Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge, PPU &ppu, Joypad &joypad);
 
   void CpuWrite8Bit(uint16_t address, uint8_t value);
 
@@ -24,6 +25,7 @@ class Bus {
   std::array<uint8_t, 0x0800> &memory_;
   Cartridge &cartridge_;
   PPU &ppu_;
+  Joypad &joypad_;
 };
 }  // namespace nes
 

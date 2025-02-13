@@ -7,7 +7,7 @@
 namespace nes {
 
 Machine::Machine(const std::string &path)
-    : bus_(memory_, cartridge_, ppu_),
+    : bus_(memory_, cartridge_, ppu_, joypad_),
       cpu_(bus_),
       ppu_(cpu_, cartridge_),
       rom_path_(path) {
@@ -39,6 +39,34 @@ int Machine::Run() {
       while(--cpu_.cycles > 0);
     }
 
+    if (IsKeyDown(KEY_S)) {
+      joypad_.SetKey(Joypad::kDown, true);
+    }
+    if (IsKeyReleased(KEY_S)) {
+      joypad_.SetKey(Joypad::kDown, false);
+    }
+
+    if (IsKeyDown(KEY_W)) {
+      joypad_.SetKey(Joypad::kUp, true);
+    }
+    if (IsKeyReleased(KEY_W)) {
+      joypad_.SetKey(Joypad::kUp, false);
+    }
+
+    if (IsKeyDown(KEY_ENTER)) {
+      joypad_.SetKey(Joypad::kStart, true);
+    }
+    if (IsKeyReleased(KEY_ENTER)) {
+      joypad_.SetKey(Joypad::kStart, false);
+    }
+
+    if (IsKeyDown(KEY_O)) {
+      joypad_.SetKey(Joypad::kSelect, true);
+    }
+    if (IsKeyReleased(KEY_O)) {
+      joypad_.SetKey(Joypad::kSelect, false);
+    }
+
     BeginDrawing();
     ClearBackground(BLACK);
 
@@ -50,7 +78,7 @@ int Machine::Run() {
                       ppu_.pixels()[y * 256 + x]);
       }
     }
-    // ppu_.TestRenderNametable(0x2400);
+    // ppu_.TestRenderNametable(0x2000);
     // ppu_.TestRenderSprite();
     EndDrawing();
   }

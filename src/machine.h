@@ -5,6 +5,7 @@
 #include "cpu/cpu.h"
 #include "ppu/ppu.h"
 #include "cartridge/cartridge.h"
+#include "joypad/joypad.h"
 
 namespace nes {
 
@@ -17,6 +18,7 @@ class Machine {
  private:
   std::array<uint8_t, 0x0800> memory_;
   Cartridge cartridge_;
+  Joypad joypad_;
   Bus bus_;
   Cpu cpu_;
   PPU ppu_;

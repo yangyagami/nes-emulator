@@ -467,6 +467,20 @@ void Cpu::PLA(AddressingMode addressing) {
   UpdateZeroAndNegativeFlag(A);
 }
 
+void Cpu::PLP(AddressingMode addressing) {
+  (void) addressing;  // Not used
+  Status tmp;
+  tmp.raw = Pop();
+
+  P.CARRY = tmp.CARRY;
+  P.ZERO = tmp.ZERO;
+  P.INTERRUPT_DISABLE = tmp.INTERRUPT_DISABLE;
+  P.DECIMAL = tmp.DECIMAL;
+  P.B = tmp.B;
+  P.OVERFLOW = tmp.OVERFLOW;
+  P.NEGATIVE = tmp.NEGATIVE;
+}
+
 void Cpu::ROL(AddressingMode addressing) {
   auto func = [this](uint8_t *v) {
     int16_t tmp = *v << 1;

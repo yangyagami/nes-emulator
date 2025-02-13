@@ -130,6 +130,7 @@ struct Cpu {
   void PHA(AddressingMode addressing);
   void PHP(AddressingMode addressing);
   void PLA(AddressingMode addressing);
+  void PLP(AddressingMode addressing);
 
   void ROL(AddressingMode addressing);
   void ROR(AddressingMode addressing);
@@ -404,6 +405,8 @@ struct Cpu {
                0x08, 1, 3, &Cpu::PHP),
     NES_OPCODE("PLA", kImplicit,
                0x68, 1, 4, &Cpu::PLA),
+    NES_OPCODE("PLP", kImplicit,
+               0x28, 1, 4, &Cpu::PLP),
 
     NES_OPCODE("ROL", kImplicit,
                0x2A, 1, 2, &Cpu::ROL),

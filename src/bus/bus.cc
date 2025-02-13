@@ -3,14 +3,18 @@
 #include <cstdint>
 #include <array>
 #include <cassert>
+#include <format>
+#include <iostream>
 
 #include "cartridge/cartridge.h"
 #include "utils/assert.h"
 
 namespace nes {
-Bus::Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge, PPU &ppu)
-    : memory_(memory), cartridge_(cartridge), ppu_(ppu) {
-}
+Bus::Bus(std::array<uint8_t, 0x0800> &memory, Cartridge &cartridge, PPU &ppu, Joypad &joypad)
+    : memory_(memory),
+      cartridge_(cartridge),
+      ppu_(ppu),
+      joypad_(joypad) {}
 
 void Bus::CpuWrite8Bit(uint16_t address, uint8_t value) {
   if (address >= 0x0800 && address <= 0x0FFF) {
@@ -30,6 +34,10 @@ void Bus::CpuWrite8Bit(uint16_t address, uint8_t value) {
                 ppu_.OAM.begin());
     } else {
       // TODO(yangsiyu):
+      if (address == 0x4016) {
+        bool strobe = (value & 0x1) > 0;
+        joypad_.set_strobe(strobe);
+      }
       // nes_assert(false, std::format("Unsupported write: {:#x}", address));
     }
   } else if (address >= 0x4020) {
@@ -60,10 +68,15 @@ uint8_t Bus::CpuRead8Bit(uint16_t address) {
     return ppu_.Read(address);
   } else if (address >= 0x2008 && address <= 0x3FFF) {
     // Mirrors of $2000–$2007 (repeats every 8 bytes)
+    // std::cout << std::format("Debug: {:#x}, mirror: {:#x}\n", address, 0x2000 + (address - 0x2000) % 8);
     return ppu_.Read(0x2000 + (address - 0x2000) % 8);
   } else if (address >= 0x4000 && address <= 0x4017) {
     // TODO(yangsiyu):
-    return 0;
+    if (address == 0x4016) {  // Joypad1
+      return joypad_.GetCurrentKey() ? 1 : 0;
+    } else {
+      return 0;
+    }
   } else if (address >= 0x4020) {
     // Cartridge
     if (address >= 0x8000) {
