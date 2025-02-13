@@ -140,12 +140,18 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
     }
     case kIndirectIndexed: {
       uint16_t addr = (PC + 1);
-      uint8_t tmp = bus_.CpuRead8Bit(addr);
-      uint16_t before = bus_.CpuRead16Bit(tmp);
+      uint8_t zp_addr = bus_.CpuRead8Bit(addr);
+      if (zp_addr == 0xFF) {
+        result = (bus_.CpuRead8Bit(0x00) << 8) | bus_.CpuRead8Bit(zp_addr);
+        result += Y;
+      } else {
+        uint8_t zp_addr = bus_.CpuRead8Bit(addr);
+        uint16_t before = bus_.CpuRead16Bit(zp_addr);
 
-      result = before + Y;
+        result = before + Y;
+      }
 
-      if (IsCrossPage(before, result)) {
+      if (IsCrossPage(PC, result)) {
         cycles++;
       }
       break;
