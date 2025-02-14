@@ -34,7 +34,7 @@ void Cpu::Tick() {
 
   cycles = opcode_obj.cycles;
 
-  opcode_obj.func(opcode_obj.addressing_mode);
+  opcode_obj.func(opcode_obj);
 
   if (!jumped_) {
     PC += opcode_obj.bytes;
@@ -86,16 +86,36 @@ std::string Cpu::Disassemble(uint16_t address) {
       right = std::format("${:02x}, Y", bus_.CpuRead8Bit(address + 1));
       break;
     }
-    case kRelative: {
-      right = std::format("(${:02x})", bus_.CpuRead8Bit(address + 1));
+    case kAbsoluteX: {
+      right = std::format("${:04x}, X", bus_.CpuRead16Bit(address + 1));
+      break;
+    }
+    case kAbsoluteY: {
+      right = std::format("${:04x}, Y", bus_.CpuRead16Bit(address + 1));
       break;
     }
     case kImmediate: {
       right = std::format("#${:02x}", bus_.CpuRead8Bit(address + 1));
       break;
     }
+    case kRelative: {
+      right = std::format("(${:02x})", bus_.CpuRead8Bit(address + 1));
+      break;
+    }
     case kImplicit: {
       right = "";
+      break;
+    }
+    case kIndirect: {
+      right = std::format("(${:04x})", bus_.CpuRead16Bit(address + 1));
+      break;
+    }
+    case kIndexedIndirect: {
+      right = std::format("(${:02x}, X)", bus_.CpuRead8Bit(address + 1));
+      break;
+    }
+    case kIndirectIndexed: {
+      right = std::format("(${:02x}), Y", bus_.CpuRead8Bit(address + 1));
       break;
     }
     default: {
@@ -107,8 +127,452 @@ std::string Cpu::Disassemble(uint16_t address) {
   return std::format("{} {}", opcode_obj.name, right);
 }
 
-uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
+// Instructions
+void Cpu::ADC(Opcode &opcode_obj) {
+  uint16_t addr = GetAddress(opcode_obj);
+  uint8_t pre_a = A;
+  uint8_t m = bus_.CpuRead8Bit(addr);
+  int16_t tmp_result = A + m + P.CARRY;
+  A = tmp_result;
+
+  UpdateZeroAndNegativeFlag(A);
+  UpdateOverflowFlag(pre_a, m, A);
+  UpdateCarryFlag(tmp_result);
+}
+
+void Cpu::AND(Opcode &opcode_obj) {
+  uint16_t addr = GetAddress(opcode_obj);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+
+  A &= m;
+
+  UpdateZeroAndNegativeFlag(A);
+}
+
+void Cpu::ASL(Opcode &opcode_obj) {
+  int16_t target;
+  AddressingMode addressing = opcode_obj.addressing_mode;
+  if (addressing == kImplicit) {
+    target = A;
+    target <<= 1;
+    A = target;
+  } else {
+    uint16_t addr = GetAddress(opcode_obj);
+    target = bus_.CpuRead8Bit(addr);
+    target <<= 1;
+    bus_.CpuWrite8Bit(addr, target);
+  }
+
+  UpdateZeroAndNegativeFlag(target);
+  UpdateCarryFlag(target);
+}
+
+void Cpu::BCC(Opcode &opcode_obj) {
+  BranchIf(opcode_obj, (P.CARRY == 0));
+}
+
+void Cpu::BCS(Opcode &opcode_obj) {
+  BranchIf(opcode_obj, (P.CARRY == 1));
+}
+
+void Cpu::BEQ(Opcode &opcode_obj) {
+  BranchIf(opcode_obj, (P.ZERO == 1));
+}
+
+void Cpu::BIT(Opcode &opcode_obj) {
+  uint16_t addr = GetAddress(opcode_obj);
+
+  uint8_t m = bus_.CpuRead8Bit(addr);
+
+  uint8_t v = A & m;
+
+  P.ZERO = (v == 0 ? 1 : 0);
+
+  Status tmp;
+  tmp.raw = m;
+
+  P.OVERFLOW = tmp.OVERFLOW;
+  P.NEGATIVE = tmp.NEGATIVE;
+}
+
+void Cpu::BMI(Opcode &opcode_obj) {
+  BranchIf(opcode_obj, (P.NEGATIVE == 1));
+}
+
+void Cpu::BNE(Opcode &opcode_obj) {
+  BranchIf(opcode_obj, (P.ZERO == 0));
+}
+
+void Cpu::BPL(Opcode &opcode_obj) {
+  BranchIf(opcode_obj, (P.NEGATIVE == 0));
+}
+
+void Cpu::BVC(Opcode &opcode_obj) {
+  BranchIf(opcode_obj, (P.OVERFLOW == 0));
+}
+
+void Cpu::BVS(Opcode &opcode_obj) {
+  BranchIf(opcode_obj, (P.OVERFLOW == 1));
+}
+
+void Cpu::BRK(Opcode &opcode_obj) {
+  (void) opcode_obj;
+
+  uint16_t new_pc = PC + 2;
+  Push(new_pc >> 8);  // high bytes
+  Push((new_pc & 0xFF));  // low bytes
+  Status tmp;
+  tmp = P;
+  tmp.B = 1;
+  tmp.UNUSED = 1;
+  Push(tmp.raw);
+  PC = bus_.CpuRead16Bit(0xFFFE);
+
+  P.INTERRUPT_DISABLE = 1;
+
+  jumped_ = true;
+}
+
+void Cpu::CLC(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  P.CARRY = 0;
+}
+
+void Cpu::CLD(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  P.DECIMAL = 0;
+}
+
+void Cpu::CLI(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  P.INTERRUPT_DISABLE = 0;
+}
+
+void Cpu::CLV(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  P.OVERFLOW = 0;
+}
+
+void Cpu::CMP(Opcode &opcode_obj) {
+  Compare(opcode_obj, A);
+}
+
+void Cpu::CPX(Opcode &opcode_obj) {
+  Compare(opcode_obj, X);
+}
+
+void Cpu::CPY(Opcode &opcode_obj) {
+  Compare(opcode_obj, Y);
+}
+
+void Cpu::DEC(Opcode &opcode_obj) {
+  uint16_t addr = GetAddress(opcode_obj);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+  Increment(&m, -1);
+  bus_.CpuWrite8Bit(addr, m);
+}
+
+void Cpu::DEX(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  Increment(&X, -1);
+}
+
+void Cpu::DEY(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  Increment(&Y, -1);
+}
+
+void Cpu::EOR(Opcode &opcode_obj) {
+  uint16_t addr = GetAddress(opcode_obj);
+
+  uint8_t m = bus_.CpuRead8Bit(addr);
+
+  A ^= m;
+
+  UpdateZeroAndNegativeFlag(A);
+}
+
+void Cpu::INC(Opcode &opcode_obj) {
+  uint16_t addr = GetAddress(opcode_obj);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+  Increment(&m, 1);
+  bus_.CpuWrite8Bit(addr, m);
+}
+
+void Cpu::INX(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  Increment(&X, 1);
+}
+
+void Cpu::INY(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  Increment(&Y, 1);
+}
+
+void Cpu::JMP(Opcode &opcode_obj) {
+  /*
+    Unfortunately, because of a CPU bug, if this 2-byte variable has an address ending in $FF and thus crosses a page, then the CPU fails to increment the page when reading the second byte and thus reads the wrong address. For example, JMP ($03FF) reads $03FF and $0300 instead of $0400. Care should be taken to ensure this variable does not cross a page.
+   */
+  PC = GetAddress(opcode_obj);
+  jumped_ = true;
+}
+
+void Cpu::JSR(Opcode &opcode_obj) {
+  uint16_t new_pc = GetAddress(opcode_obj);
+  uint16_t next_pc = PC + 2;
+
+  Push((next_pc >> 8));
+  Push((next_pc & 0xFF));
+
+  PC = new_pc;
+
+  jumped_ = true;
+}
+
+void Cpu::LDA(Opcode &opcode_obj) {
+  LoadToReg(A, opcode_obj);
+}
+
+void Cpu::LDX(Opcode &opcode_obj) {
+  LoadToReg(X, opcode_obj);
+}
+
+void Cpu::LDY(Opcode &opcode_obj) {
+  LoadToReg(Y, opcode_obj);
+}
+
+void Cpu::LSR(Opcode &opcode_obj) {
+  uint8_t target;
+
+  auto func = [this, &target](uint8_t *v){
+    P.CARRY = (*v & 0x01);
+    *v >>= 1;
+    target = *v;
+  };
+
+  if (opcode_obj.addressing_mode == kImplicit) {
+    func(&A);
+  } else {
+    uint16_t addr = GetAddress(opcode_obj);
+    uint8_t m = bus_.CpuRead8Bit(addr);
+    func(&m);
+    bus_.CpuWrite8Bit(addr, m);
+  }
+
+  UpdateZeroAndNegativeFlag(target);
+}
+
+void Cpu::NMI() {
+  uint16_t new_pc = PC + 2;
+
+  Push(new_pc >> 8);  // high bytes
+  Push((new_pc & 0xFF));  // low bytes
+
+  Status tmp;
+  tmp = P;
+  tmp.B = 1;
+  tmp.UNUSED = 1;
+  Push(tmp.raw);
+
+  PC = bus_.CpuRead16Bit(0xFFFA);
+  nmi_flipflop = false;
+
+  // P.INTERRUPT_DISABLE = 1;
+}
+
+void Cpu::NOP(Opcode &opcode_obj) {
+  (void) opcode_obj;
+}
+
+void Cpu::ORA(Opcode &opcode_obj) {
+  uint16_t addr = GetAddress(opcode_obj);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+  A |= m;
+
+  UpdateZeroAndNegativeFlag(A);
+}
+
+void Cpu::PHA(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Not used
+  Push(A);
+}
+
+void Cpu::PHP(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Not used
+  Status tmp = P;
+  tmp.B = 1;
+  tmp.UNUSED = 1;
+  Push(tmp.raw);
+}
+
+void Cpu::PLA(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Not used
+  A = Pop();
+
+  UpdateZeroAndNegativeFlag(A);
+}
+
+void Cpu::PLP(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Not used
+  Status tmp;
+  tmp.raw = Pop();
+
+  P.CARRY = tmp.CARRY;
+  P.ZERO = tmp.ZERO;
+  // P.INTERRUPT_DISABLE = tmp.INTERRUPT_DISABLE; delayed 1 instruction.
+  interrupt_disable_latch_ = tmp.INTERRUPT_DISABLE;
+  interrupt_disable_delay_ = 2;
+  P.DECIMAL = tmp.DECIMAL;
+  P.OVERFLOW = tmp.OVERFLOW;
+  P.NEGATIVE = tmp.NEGATIVE;
+}
+
+void Cpu::ROL(Opcode &opcode_obj) {
+  auto func = [this](uint8_t *v) {
+    int16_t tmp = *v << 1;
+    tmp = (tmp & ~1) | (P.CARRY & 1);
+    P.CARRY = tmp >> 8;
+    *v = tmp;
+
+    UpdateZeroAndNegativeFlag(*v);
+  };
+
+  if (opcode_obj.addressing_mode == kImplicit) {
+    func(&A);
+  } else {
+    uint16_t addr = GetAddress(opcode_obj);
+    uint8_t m = bus_.CpuRead8Bit(addr);
+    func(&m);
+    bus_.CpuWrite8Bit(addr, m);
+  }
+}
+
+void Cpu::ROR(Opcode &opcode_obj) {
+  auto func = [this](uint8_t *v) {
+    uint8_t bit_zero = *v & 1;
+    *v >>= 1;
+    *v |= (P.CARRY << 7);
+    P.CARRY = bit_zero;
+
+    UpdateZeroAndNegativeFlag(*v);
+  };
+
+  if (opcode_obj.addressing_mode == kImplicit) {
+    func(&A);
+  } else {
+    uint16_t addr = GetAddress(opcode_obj);
+    uint8_t m = bus_.CpuRead8Bit(addr);
+    func(&m);
+    bus_.CpuWrite8Bit(addr, m);
+  }
+}
+
+void Cpu::RTI(Opcode &opcode_obj) {
+  (void) opcode_obj;
+
+  Status old = P;
+  P.raw = Pop();
+  P.UNUSED = old.UNUSED;
+  P.B = old.B;
+
+  uint8_t low = Pop();
+  uint8_t hi = Pop();
+
+  PC = ((hi << 8) | low);
+
+  jumped_ = true;
+}
+
+void Cpu::RTS(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  uint8_t low = Pop();
+  uint8_t hi = Pop();
+  uint16_t new_pc = ((hi << 8) | low);
+  PC = new_pc + 1;
+
+  jumped_ = true;
+}
+
+void Cpu::SEC(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  P.CARRY = 1;
+}
+
+void Cpu::SED(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  P.DECIMAL = 1;
+}
+
+void Cpu::SEI(Opcode &opcode_obj) {
+  (void) opcode_obj;
+  P.INTERRUPT_DISABLE = 1;
+}
+
+void Cpu::STA(Opcode &opcode_obj) {
+  StoreToMem(A, opcode_obj);
+}
+
+void Cpu::STX(Opcode &opcode_obj) {
+  StoreToMem(X, opcode_obj);
+}
+
+void Cpu::STY(Opcode &opcode_obj) {
+  StoreToMem(Y, opcode_obj);
+}
+
+void Cpu::SBC(Opcode &opcode_obj) {
+  uint16_t addr = GetAddress(opcode_obj);
+  uint8_t m = bus_.CpuRead8Bit(addr);
+
+  uint8_t pre_a = A;
+  int16_t result = A - m - ((~P.CARRY) & 0x01);
+  A = result;
+
+  UpdateZeroAndNegativeFlag(A);
+  UpdateOverflowFlag(pre_a, ~m, A);
+  P.CARRY = ~static_cast<uint8_t>(result < 0x00);
+}
+
+void Cpu::TAX(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Because we was implied
+
+  Transfer(A, X);
+}
+
+void Cpu::TAY(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Because we was implied
+
+  Transfer(A, Y);
+}
+
+void Cpu::TSX(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Because we was implied
+
+  Transfer(SP, X);
+}
+
+void Cpu::TXA(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Because we was implied
+
+  Transfer(X, A);
+}
+
+void Cpu::TXS(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Because we was implied
+
+  Transfer(X, SP, false);
+}
+
+void Cpu::TYA(Opcode &opcode_obj) {
+  (void) opcode_obj;  // Because we was implied
+
+  Transfer(Y, A);
+}
+
+uint16_t Cpu::GetAddress(Opcode &opcode_obj) {
   uint16_t result = 0;
+
+  AddressingMode addressing_mode = opcode_obj.addressing_mode;
 
   switch (addressing_mode) {
     case kImmediate: {
@@ -125,11 +589,11 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
       break;
     }
     case kAbsoluteX: {
-      result = AbsoluteAdd(X);
+      result = AbsoluteAdd(X, opcode_obj.cycles_plus);
       break;
     }
     case kAbsoluteY: {
-      result = AbsoluteAdd(Y);
+      result = AbsoluteAdd(Y, opcode_obj.cycles_plus);
       break;
     }
     case kZeroPage: {
@@ -163,23 +627,32 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
 
       tmp += X;
 
-      result = bus_.CpuRead16Bit(tmp);
+      uint8_t low = bus_.CpuRead8Bit(tmp);
+      uint8_t hi;
+
+      if (tmp == 0xFF) {
+        hi = bus_.CpuRead8Bit(0x0);
+      } else {
+        hi = bus_.CpuRead8Bit(tmp + 1);
+      }
+
+      result = (hi << 8) | low;
       break;
     }
     case kIndirectIndexed: {
       uint16_t addr = (PC + 1);
       uint8_t zp_addr = bus_.CpuRead8Bit(addr);
+      uint16_t indirect;
       if (zp_addr == 0xFF) {
-        result = (bus_.CpuRead8Bit(0x00) << 8) | bus_.CpuRead8Bit(zp_addr);
-        result += Y;
+        indirect = (bus_.CpuRead8Bit(0x00) << 8) | bus_.CpuRead8Bit(zp_addr);
       } else {
         uint8_t zp_addr = bus_.CpuRead8Bit(addr);
-        uint16_t before = bus_.CpuRead16Bit(zp_addr);
-
-        result = before + Y;
+        indirect = bus_.CpuRead16Bit(zp_addr);
       }
 
-      if (IsCrossPage(PC, result)) {
+      result = indirect + Y;
+
+      if (opcode_obj.cycles_plus && IsCrossPage(indirect, result)) {
         cycles++;
       }
       break;
@@ -192,6 +665,55 @@ uint16_t Cpu::GetAddress(AddressingMode addressing_mode) {
   }
 
   return result;
+}
+
+bool Cpu::IsCrossPage(uint16_t old_address, uint16_t new_address) {
+  const int kPageSize = 256;
+  if (old_address / kPageSize == new_address / kPageSize) {
+    return false;
+  }
+  return true;
+}
+
+uint16_t Cpu::AbsoluteAdd(uint8_t reg, bool cycles_plus) {
+  uint16_t result = 0;
+
+  uint16_t before = bus_.CpuRead16Bit(PC + 1);
+  result = before + reg;
+
+  if (cycles_plus && IsCrossPage(before, result)) {
+    cycles++;
+  }
+
+  return result;
+}
+
+uint16_t Cpu::ZeroPageAdd(uint8_t reg) {
+  uint16_t addr = (PC + 1);
+  uint8_t result = bus_.CpuRead8Bit(addr);
+  result += reg;
+
+  return result;
+}
+
+void Cpu::LoadToReg(uint8_t &reg, Opcode &opcode_obj) {
+  uint16_t new_address = GetAddress(opcode_obj);
+  reg = bus_.CpuRead8Bit(new_address);
+
+  UpdateZeroAndNegativeFlag(reg);
+}
+
+void Cpu::StoreToMem(uint8_t reg, Opcode &opcode_obj) {
+  uint16_t new_address = GetAddress(opcode_obj);
+  bus_.CpuWrite8Bit(new_address, reg);
+}
+
+void Cpu::Transfer(uint8_t from, uint8_t &to, bool p) {
+  to = from;
+
+  if (p) {
+    UpdateZeroAndNegativeFlag(to);
+  }
 }
 
 void Cpu::UpdateZeroAndNegativeFlag(uint8_t v) {
@@ -222,10 +744,10 @@ void Cpu::UpdateCarryFlag(int16_t result) {
   }
 }
 
-void Cpu::BranchIf(AddressingMode addressing, bool condition) {
+void Cpu::BranchIf(Opcode &opcode_obj, bool condition) {
   if (condition) {
-    uint16_t old_pc = PC;
-    PC = GetAddress(addressing);
+    uint16_t old_pc = PC + 2;
+    PC = GetAddress(opcode_obj);
     cycles++;
 
     if (IsCrossPage(old_pc, PC + 2)) {
@@ -234,8 +756,8 @@ void Cpu::BranchIf(AddressingMode addressing, bool condition) {
   }
 }
 
-void Cpu::Compare(AddressingMode addressing, uint8_t reg) {
-  uint16_t addr = GetAddress(addressing);
+void Cpu::Compare(Opcode &opcode_obj, uint8_t reg) {
+  uint16_t addr = GetAddress(opcode_obj);
   uint8_t m = bus_.CpuRead8Bit(addr);
 
   uint8_t result = reg - m;
@@ -248,499 +770,6 @@ void Cpu::Increment(uint8_t *target, int value) {
   *target += value;
 
   UpdateZeroAndNegativeFlag(*target);
-}
-
-// Instructions
-void Cpu::ADC(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
-  uint8_t pre_a = A;
-  uint8_t m = bus_.CpuRead8Bit(addr);
-  int16_t tmp_result = A + m + P.CARRY;
-  A = tmp_result;
-
-  UpdateZeroAndNegativeFlag(A);
-  UpdateOverflowFlag(pre_a, m, A);
-  UpdateCarryFlag(tmp_result);
-}
-
-void Cpu::AND(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
-  uint8_t m = bus_.CpuRead8Bit(addr);
-
-  A &= m;
-
-  UpdateZeroAndNegativeFlag(A);
-}
-
-void Cpu::ASL(AddressingMode addressing) {
-  int16_t target;
-  if (addressing == kImplicit) {
-    target = A;
-    target <<= 1;
-    A = target;
-  } else {
-    uint16_t addr = GetAddress(addressing);
-    target = bus_.CpuRead8Bit(addr);
-    target <<= 1;
-    bus_.CpuWrite8Bit(addr, target);
-  }
-
-  UpdateZeroAndNegativeFlag(target);
-  UpdateCarryFlag(target);
-}
-
-void Cpu::BCC(AddressingMode addressing) {
-  BranchIf(addressing, (P.CARRY == 0));
-}
-
-void Cpu::BCS(AddressingMode addressing) {
-  BranchIf(addressing, (P.CARRY == 1));
-}
-
-void Cpu::BEQ(AddressingMode addressing) {
-  BranchIf(addressing, (P.ZERO == 1));
-}
-
-void Cpu::BIT(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
-
-  uint8_t m = bus_.CpuRead8Bit(addr);
-
-  uint8_t v = A & m;
-
-  P.ZERO = (v == 0 ? 1 : 0);
-
-  Status tmp;
-  tmp.raw = m;
-
-  P.OVERFLOW = tmp.OVERFLOW;
-  P.NEGATIVE = tmp.NEGATIVE;
-}
-
-void Cpu::BMI(AddressingMode addressing) {
-  BranchIf(addressing, (P.NEGATIVE == 1));
-}
-
-void Cpu::BNE(AddressingMode addressing) {
-  BranchIf(addressing, (P.ZERO == 0));
-}
-
-void Cpu::BPL(AddressingMode addressing) {
-  BranchIf(addressing, (P.NEGATIVE == 0));
-}
-
-void Cpu::BVC(AddressingMode addressing) {
-  BranchIf(addressing, (P.OVERFLOW == 0));
-}
-
-void Cpu::BVS(AddressingMode addressing) {
-  BranchIf(addressing, (P.OVERFLOW == 1));
-}
-
-void Cpu::BRK(AddressingMode addressing) {
-  (void) addressing;
-
-  uint16_t new_pc = PC + 2;
-  Push(new_pc >> 8);  // high bytes
-  Push((new_pc & 0xFF));  // low bytes
-  Status tmp;
-  tmp = P;
-  tmp.B = 1;
-  tmp.UNUSED = 1;
-  Push(tmp.raw);
-  PC = bus_.CpuRead16Bit(0xFFFE);
-
-  P.INTERRUPT_DISABLE = 1;
-
-  jumped_ = true;
-}
-
-void Cpu::CLC(AddressingMode addressing) {
-  (void) addressing;
-  P.CARRY = 0;
-}
-
-void Cpu::CLD(AddressingMode addressing) {
-  (void) addressing;
-  P.DECIMAL = 0;
-}
-
-void Cpu::CLI(AddressingMode addressing) {
-  (void) addressing;
-  P.INTERRUPT_DISABLE = 0;
-}
-
-void Cpu::CLV(AddressingMode addressing) {
-  (void) addressing;
-  P.OVERFLOW = 0;
-}
-
-void Cpu::CMP(AddressingMode addressing) {
-  Compare(addressing, A);
-}
-
-void Cpu::CPX(AddressingMode addressing) {
-  Compare(addressing, X);
-}
-
-void Cpu::CPY(AddressingMode addressing) {
-  Compare(addressing, Y);
-}
-
-void Cpu::DEC(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
-  uint8_t m = bus_.CpuRead8Bit(addr);
-  Increment(&m, -1);
-  bus_.CpuWrite8Bit(addr, m);
-}
-
-void Cpu::DEX(AddressingMode addressing) {
-  (void) addressing;
-  Increment(&X, -1);
-}
-
-void Cpu::DEY(AddressingMode addressing) {
-  (void) addressing;
-  Increment(&Y, -1);
-}
-
-void Cpu::EOR(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
-
-  uint8_t m = bus_.CpuRead8Bit(addr);
-
-  A ^= m;
-
-  UpdateZeroAndNegativeFlag(A);
-}
-
-void Cpu::INC(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
-  uint8_t m = bus_.CpuRead8Bit(addr);
-  Increment(&m, 1);
-  bus_.CpuWrite8Bit(addr, m);
-}
-
-void Cpu::INX(AddressingMode addressing) {
-  (void) addressing;
-  Increment(&X, 1);
-}
-
-void Cpu::INY(AddressingMode addressing) {
-  (void) addressing;
-  Increment(&Y, 1);
-}
-
-void Cpu::JMP(AddressingMode addressing) {
-  /*
-    Unfortunately, because of a CPU bug, if this 2-byte variable has an address ending in $FF and thus crosses a page, then the CPU fails to increment the page when reading the second byte and thus reads the wrong address. For example, JMP ($03FF) reads $03FF and $0300 instead of $0400. Care should be taken to ensure this variable does not cross a page.
-   */
-  PC = GetAddress(addressing);
-  jumped_ = true;
-}
-
-void Cpu::JSR(AddressingMode addressing) {
-  uint16_t new_pc = GetAddress(addressing);
-  uint16_t next_pc = PC + 2;
-
-  Push((next_pc >> 8));
-  Push((next_pc & 0xFF));
-
-  PC = new_pc;
-
-  jumped_ = true;
-}
-
-void Cpu::LDA(AddressingMode addressing) {
-  LoadToReg(A, addressing);
-}
-
-void Cpu::LDX(AddressingMode addressing) {
-  LoadToReg(X, addressing);
-}
-
-void Cpu::LDY(AddressingMode addressing) {
-  LoadToReg(Y, addressing);
-}
-
-void Cpu::LSR(AddressingMode addressing) {
-  uint8_t target;
-
-  auto func = [this, &target](uint8_t *v){
-    P.CARRY = (*v & 0x01);
-    *v >>= 1;
-    target = *v;
-  };
-
-  if (addressing == kImplicit) {
-    func(&A);
-  } else {
-    uint16_t addr = GetAddress(addressing);
-    uint8_t m = bus_.CpuRead8Bit(addr);
-    func(&m);
-    bus_.CpuWrite8Bit(addr, m);
-  }
-
-  UpdateZeroAndNegativeFlag(target);
-}
-
-void Cpu::NMI() {
-  uint16_t new_pc = PC + 2;
-
-  Push(new_pc >> 8);  // high bytes
-  Push((new_pc & 0xFF));  // low bytes
-
-  Status tmp;
-  tmp = P;
-  tmp.B = 1;
-  tmp.UNUSED = 1;
-  Push(tmp.raw);
-
-  PC = bus_.CpuRead16Bit(0xFFFA);
-  nmi_flipflop = false;
-
-  // P.INTERRUPT_DISABLE = 1;
-}
-
-void Cpu::NOP(AddressingMode addressing) {
-  (void) addressing;
-}
-
-void Cpu::ORA(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
-  uint8_t m = bus_.CpuRead8Bit(addr);
-  A |= m;
-
-  UpdateZeroAndNegativeFlag(A);
-}
-
-void Cpu::PHA(AddressingMode addressing) {
-  (void) addressing;  // Not used
-  Push(A);
-}
-
-void Cpu::PHP(AddressingMode addressing) {
-  (void) addressing;  // Not used
-  Status tmp = P;
-  tmp.B = 1;
-  tmp.UNUSED = 1;
-  Push(tmp.raw);
-}
-
-void Cpu::PLA(AddressingMode addressing) {
-  (void) addressing;  // Not used
-  A = Pop();
-
-  UpdateZeroAndNegativeFlag(A);
-}
-
-void Cpu::PLP(AddressingMode addressing) {
-  (void) addressing;  // Not used
-  Status tmp;
-  tmp.raw = Pop();
-
-  P.CARRY = tmp.CARRY;
-  P.ZERO = tmp.ZERO;
-  // P.INTERRUPT_DISABLE = tmp.INTERRUPT_DISABLE; delayed 1 instruction.
-  interrupt_disable_latch_ = tmp.INTERRUPT_DISABLE;
-  interrupt_disable_delay_ = 2;
-  P.DECIMAL = tmp.DECIMAL;
-  P.OVERFLOW = tmp.OVERFLOW;
-  P.NEGATIVE = tmp.NEGATIVE;
-}
-
-void Cpu::ROL(AddressingMode addressing) {
-  auto func = [this](uint8_t *v) {
-    int16_t tmp = *v << 1;
-    tmp = (tmp & ~1) | (P.CARRY & 1);
-    P.CARRY = tmp >> 8;
-    *v = tmp;
-
-    UpdateZeroAndNegativeFlag(*v);
-  };
-
-  if (addressing == kImplicit) {
-    func(&A);
-  } else {
-    uint16_t addr = GetAddress(addressing);
-    uint8_t m = bus_.CpuRead8Bit(addr);
-    func(&m);
-    bus_.CpuWrite8Bit(addr, m);
-  }
-}
-
-void Cpu::ROR(AddressingMode addressing) {
-  auto func = [this](uint8_t *v) {
-    uint8_t bit_zero = *v & 1;
-    *v >>= 1;
-    *v |= (P.CARRY << 7);
-    P.CARRY = bit_zero;
-
-    UpdateZeroAndNegativeFlag(*v);
-  };
-
-  if (addressing == kImplicit) {
-    func(&A);
-  } else {
-    uint16_t addr = GetAddress(addressing);
-    uint8_t m = bus_.CpuRead8Bit(addr);
-    func(&m);
-    bus_.CpuWrite8Bit(addr, m);
-  }
-}
-
-void Cpu::RTI(AddressingMode addressing) {
-  (void) addressing;
-
-  Status old = P;
-  P.raw = Pop();
-  P.UNUSED = old.UNUSED;
-  P.B = old.B;
-
-  uint8_t low = Pop();
-  uint8_t hi = Pop();
-
-  PC = ((hi << 8) | low);
-
-  jumped_ = true;
-}
-
-void Cpu::RTS(AddressingMode addressing) {
-  (void) addressing;
-  uint8_t low = Pop();
-  uint8_t hi = Pop();
-  uint16_t new_pc = ((hi << 8) | low);
-  PC = new_pc + 1;
-
-  jumped_ = true;
-}
-
-void Cpu::SEC(AddressingMode addressing) {
-  (void) addressing;
-  P.CARRY = 1;
-}
-
-void Cpu::SED(AddressingMode addressing) {
-  (void) addressing;
-  P.DECIMAL = 1;
-}
-
-void Cpu::SEI(AddressingMode addressing) {
-  (void) addressing;
-  P.INTERRUPT_DISABLE = 1;
-}
-
-void Cpu::STA(AddressingMode addressing) {
-  (void) addressing;
-  StoreToMem(A, addressing);
-}
-
-void Cpu::STX(AddressingMode addressing) {
-  (void) addressing;
-  StoreToMem(X, addressing);
-}
-
-void Cpu::STY(AddressingMode addressing) {
-  (void) addressing;
-  StoreToMem(Y, addressing);
-}
-
-void Cpu::SBC(AddressingMode addressing) {
-  uint16_t addr = GetAddress(addressing);
-  uint8_t m = bus_.CpuRead8Bit(addr);
-
-  uint8_t pre_a = A;
-  int16_t result = A - m - ((~P.CARRY) & 0x01);
-  A = result;
-
-  UpdateZeroAndNegativeFlag(A);
-  UpdateOverflowFlag(pre_a, ~m, A);
-  P.CARRY = ~static_cast<uint8_t>(result < 0x00);
-}
-
-void Cpu::TAX(AddressingMode addressing) {
-  (void) addressing;  // Because we was implied
-
-  Transfer(A, X);
-}
-
-void Cpu::TAY(AddressingMode addressing) {
-  (void) addressing;  // Because we was implied
-
-  Transfer(A, Y);
-}
-
-void Cpu::TSX(AddressingMode addressing) {
-  (void) addressing;  // Because we was implied
-
-  Transfer(SP, X);
-}
-
-void Cpu::TXA(AddressingMode addressing) {
-  (void) addressing;  // Because we was implied
-
-  Transfer(X, A);
-}
-
-void Cpu::TXS(AddressingMode addressing) {
-  (void) addressing;  // Because we was implied
-
-  Transfer(X, SP, false);
-}
-
-void Cpu::TYA(AddressingMode addressing) {
-  (void) addressing;  // Because we was implied
-
-  Transfer(Y, A);
-}
-
-bool Cpu::IsCrossPage(uint16_t old_address, uint16_t new_address) {
-  const int kPageSize = 256;
-  if (old_address / kPageSize == new_address / kPageSize) {
-    return false;
-  }
-  return true;
-}
-
-uint16_t Cpu::AbsoluteAdd(uint8_t reg) {
-  uint16_t result = 0;
-
-  uint16_t before = bus_.CpuRead16Bit(PC + 1);
-  result = before + reg;
-
-  if (IsCrossPage(before, result)) {
-    cycles++;
-  }
-
-  return result;
-}
-
-uint16_t Cpu::ZeroPageAdd(uint8_t reg) {
-  uint16_t addr = (PC + 1);
-  uint8_t result = bus_.CpuRead8Bit(addr);
-  result += reg;
-
-  return result;
-}
-
-void Cpu::LoadToReg(uint8_t &reg, AddressingMode addressing) {
-  uint16_t new_address = GetAddress(addressing);
-  reg = bus_.CpuRead8Bit(new_address);
-
-  UpdateZeroAndNegativeFlag(reg);
-}
-
-void Cpu::StoreToMem(uint8_t reg, AddressingMode addressing) {
-  uint16_t new_address = GetAddress(addressing);
-  bus_.CpuWrite8Bit(new_address, reg);
-}
-
-void Cpu::Transfer(uint8_t from, uint8_t &to, bool p) {
-  to = from;
-
-  if (p) {
-    UpdateZeroAndNegativeFlag(to);
-  }
 }
 
 void Cpu::Push(uint8_t value) {

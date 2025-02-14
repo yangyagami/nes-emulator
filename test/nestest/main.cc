@@ -60,14 +60,15 @@ int main() {
       int c{std::stoi(std::string(line, 90), &pos)};
       nes_assert(cycles == c, std::format("cycles assert failed, excepted value: {}, actual: {}", c, cycles));
     }
-    std::cout << std::format("${:04x} {:10} A:${:02x} X:${:02x} Y:${:02x} P:${:02x} SP:${:02x}\n",
+    std::cout << std::format("${:04x} {:15} A:${:02x} X:${:02x} Y:${:02x} P:${:02x} SP:${:02x}, cycles:{}\n",
                              cpu.PC,
                              cpu.Disassemble(cpu.PC),
                              cpu.A,
                              cpu.X,
                              cpu.Y,
                              cpu.P.raw,
-                             cpu.SP);
+                             cpu.SP,
+                             cycles);
     nes_assert(memory[0x2] == 0, "");
     cpu.Tick();
 
