@@ -39,6 +39,13 @@ void Cpu::Tick() {
   if (!jumped_) {
     PC += opcode_obj.bytes;
   }
+
+  if (interrupt_disable_delay_ > 0) {
+    interrupt_disable_delay_--;
+    if (interrupt_disable_delay_ == 0) {
+      P.INTERRUPT_DISABLE = interrupt_disable_latch_;
+    }
+  }
 }
 
 void Cpu::Reset() {
@@ -301,12 +308,13 @@ void Cpu::BIT(AddressingMode addressing) {
 
   uint8_t v = A & m;
 
-  UpdateZeroAndNegativeFlag(v);
+  P.ZERO = (v == 0 ? 1 : 0);
 
   Status tmp;
   tmp.raw = m;
 
   P.OVERFLOW = tmp.OVERFLOW;
+  P.NEGATIVE = tmp.NEGATIVE;
 }
 
 void Cpu::BMI(AddressingMode addressing) {
@@ -333,8 +341,8 @@ void Cpu::BRK(AddressingMode addressing) {
   (void) addressing;
 
   uint16_t new_pc = PC + 2;
-  Push((new_pc & 0xFF));  // low bytes
   Push(new_pc >> 8);  // high bytes
+  Push((new_pc & 0xFF));  // low bytes
   Status tmp;
   tmp = P;
   tmp.B = 1;
@@ -435,8 +443,8 @@ void Cpu::JSR(AddressingMode addressing) {
   uint16_t new_pc = GetAddress(addressing);
   uint16_t next_pc = PC + 2;
 
-  Push((next_pc & 0xFF));
   Push((next_pc >> 8));
+  Push((next_pc & 0xFF));
 
   PC = new_pc;
 
@@ -478,8 +486,9 @@ void Cpu::LSR(AddressingMode addressing) {
 
 void Cpu::NMI() {
   uint16_t new_pc = PC + 2;
-  Push((new_pc & 0xFF));  // low bytes
+
   Push(new_pc >> 8);  // high bytes
+  Push((new_pc & 0xFF));  // low bytes
 
   Status tmp;
   tmp = P;
@@ -512,7 +521,10 @@ void Cpu::PHA(AddressingMode addressing) {
 
 void Cpu::PHP(AddressingMode addressing) {
   (void) addressing;  // Not used
-  Push(P.raw);
+  Status tmp = P;
+  tmp.B = 1;
+  tmp.UNUSED = 1;
+  Push(tmp.raw);
 }
 
 void Cpu::PLA(AddressingMode addressing) {
@@ -529,9 +541,10 @@ void Cpu::PLP(AddressingMode addressing) {
 
   P.CARRY = tmp.CARRY;
   P.ZERO = tmp.ZERO;
-  P.INTERRUPT_DISABLE = tmp.INTERRUPT_DISABLE;
+  // P.INTERRUPT_DISABLE = tmp.INTERRUPT_DISABLE; delayed 1 instruction.
+  interrupt_disable_latch_ = tmp.INTERRUPT_DISABLE;
+  interrupt_disable_delay_ = 2;
   P.DECIMAL = tmp.DECIMAL;
-  P.B = tmp.B;
   P.OVERFLOW = tmp.OVERFLOW;
   P.NEGATIVE = tmp.NEGATIVE;
 }
@@ -584,8 +597,8 @@ void Cpu::RTI(AddressingMode addressing) {
   P.UNUSED = old.UNUSED;
   P.B = old.B;
 
-  uint8_t hi = Pop();
   uint8_t low = Pop();
+  uint8_t hi = Pop();
 
   PC = ((hi << 8) | low);
 
@@ -594,8 +607,8 @@ void Cpu::RTI(AddressingMode addressing) {
 
 void Cpu::RTS(AddressingMode addressing) {
   (void) addressing;
-  uint8_t hi = Pop();
   uint8_t low = Pop();
+  uint8_t hi = Pop();
   uint16_t new_pc = ((hi << 8) | low);
   PC = new_pc + 1;
 

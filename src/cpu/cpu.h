@@ -499,6 +499,9 @@ struct Cpu {
   };
 
 #undef NES_OPCODE
+
+  int interrupt_disable_delay_ = 0;
+  uint8_t interrupt_disable_latch_ = 0;
 };
 
 }  // namespace nes
