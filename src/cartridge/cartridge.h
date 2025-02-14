@@ -33,6 +33,8 @@ struct Cartridge {
     uint8_t raw;
   } Flags7;
 
+  uint8_t Flags8;
+
   int mapper;
 
   std::vector<uint8_t> prg_rom;

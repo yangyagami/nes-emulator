@@ -32,9 +32,14 @@ int Machine::Run() {
   cpu_.PC = bus_.CpuRead16Bit(0xFFFC);
   cpu_.SP = 0xFD;
 
+  bool debug = false;
+
   while (!WindowShouldClose()) {
     bool out = false;
     while (!out) {
+      if (debug) {
+        std::cout << std::format("{:#x} {}\n", cpu_.PC, cpu_.Disassemble(cpu_.PC));
+      }
       cpu_.Tick();
       for (int i = 0; i < 3 * cpu_.cycles; ++i) {
         ppu_.Tick();
@@ -43,6 +48,10 @@ int Machine::Run() {
         }
       }
       while (--cpu_.cycles > 0);
+    }
+
+    if (IsKeyPressed(KEY_P)) {
+      debug = !debug;
     }
 
     if (IsKeyDown(KEY_S)) {

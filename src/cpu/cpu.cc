@@ -45,7 +45,8 @@ void Cpu::Reset() {
   A = X = Y = 0;
   SP = 0XFF;
   P.raw = 0;
-  P.B = 1;
+  P.B = 0;
+  P.INTERRUPT_DISABLE = 1;
   P.UNUSED = 1;
 
   cycles = 0;
@@ -62,8 +63,28 @@ std::string Cpu::Disassemble(uint16_t address) {
   std::string right;
 
   switch (opcode_obj.addressing_mode) {
+    case kAbsolute: {
+      right = std::format("${:04x}", bus_.CpuRead16Bit(address + 1));
+      break;
+    }
+    case kZeroPage: {
+      right = std::format("${:02x}", bus_.CpuRead8Bit(address + 1));
+      break;
+    }
+    case kZeroPageX: {
+      right = std::format("${:02x}, X", bus_.CpuRead8Bit(address + 1));
+      break;
+    }
+    case kZeroPageY: {
+      right = std::format("${:02x}, Y", bus_.CpuRead8Bit(address + 1));
+      break;
+    }
+    case kRelative: {
+      right = std::format("(${:02x})", bus_.CpuRead8Bit(address + 1));
+      break;
+    }
     case kImmediate: {
-      right = std::format("{}", bus_.CpuRead8Bit(address + 1));
+      right = std::format("#${:02x}", bus_.CpuRead8Bit(address + 1));
       break;
     }
     case kImplicit: {

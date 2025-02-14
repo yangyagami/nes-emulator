@@ -37,6 +37,7 @@ bool Cartridge::LoadRomFile(const std::string &path) {
 
   Flags6.raw = content[6];
   Flags7.raw = content[7];
+  Flags8 = content[8];
   mapper = (Flags7.MAPPER_NUMBER << 8) | Flags6.MAPPER_NUMBER;
 
   // Skip header
