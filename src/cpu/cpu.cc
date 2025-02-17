@@ -750,7 +750,7 @@ void Cpu::BranchIf(Opcode &opcode_obj, bool condition) {
     PC = GetAddress(opcode_obj);
     cycles++;
 
-    if (IsCrossPage(old_pc, PC + 2)) {
+    if (opcode_obj.cycles_plus && IsCrossPage(old_pc, PC + 2)) {
       cycles++;
     }
   }
