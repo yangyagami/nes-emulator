@@ -102,36 +102,11 @@ void PPU::Tick() {
    */
   one_frame_finished_ = false;
 
-  // Background
+  // Background tile loaded
   if (PPUMASK.BACKGROUND_RENDERING &&
       ((scanline_ >= 0 && scanline_ <= 239) || scanline_ == kScanLine)) {
     // See https://www.nesdev.org/w/images/default/4/4f/Ppu.svg
     if ((cycles_ >= 1 && cycles_ <= 256) || (cycles_ >= 321 && cycles_ <= 336)) {
-      uint16_t mask = (0x8000 >> x);
-      uint8_t plane0 = (bg_ls_shift & mask) > 0;
-      uint8_t plane1 = (bg_ms_shift & mask) > 0;
-
-      mask = (0x80 >> x);
-      uint8_t als = (attr_ls_shift & mask) > 0;
-      uint8_t ams = (attr_ms_shift & mask) > 0;
-
-      uint8_t palette_idx = plane0 + plane1 * 2;
-      uint8_t coloridx = ReadVRAM(0x3F00 + (ams * 2 + als) * 4 + palette_idx);
-
-      if (cycles_ >= 1 && cycles_ <= 256 && scanline_ >= 0 && scanline_ <= 239) {
-        pixels_[scanline_ * 256 + (cycles_ - 1)] = kColors[coloridx];
-      }
-
-      // Shift registers stuff.
-      // Transfer to high 8 bit.
-      bg_ls_shift <<= 1;
-      bg_ms_shift <<= 1;
-
-      attr_ls_shift <<= 1;
-      attr_ms_shift <<= 1;
-      attr_ls_shift |= attr_ls_latch;
-      attr_ms_shift |= attr_ms_latch;
-
       switch (cycles_ % 8) {
         case 2: {  // Nametable
           uint16_t nm_addr = 0x2000 | (v.raw & 0x0FFF);
@@ -200,30 +175,6 @@ void PPU::Tick() {
   // See https://www.nesdev.org/wiki/PPU_sprite_evaluation#References
   if (PPUMASK.SPRITE_RENDERING) {
     if (scanline_ >= 0 && scanline_ <= 239) {
-      if (cycles_ >= 1 && cycles_ <= 256) {
-        const Color colors[] = {
-          BLACK,
-          WHITE,
-          BLUE,
-          RED
-        };
-        for (int i = 0; i < sprites_count_; ++i) {
-          sprites_[i].x--;
-          if (sprites_[i].x <= 0 && sprites_[i].x >= -7) {
-            if (!sprites_[i].priority) {
-              uint8_t plane0 = (sprites_[i].pattern_ls_shift & 0x80) > 0;
-              uint8_t plane1 = (sprites_[i].pattern_ms_shift & 0x80) > 0;
-              uint8_t color_idx = plane0 + plane1 * 2;
-
-              pixels_[scanline_ * 256 + (cycles_ - 1)] = colors[color_idx];
-            }
-
-            sprites_[i].pattern_ls_shift <<= 1;
-            sprites_[i].pattern_ms_shift <<= 1;
-          }
-        }
-      }
-
       if (cycles_ >= 1 && cycles_ <= 64) {
         if (cycles_ % 2 == 0) {
           oam_[cycles_ / 2 - 1] = 0xFF;
@@ -378,6 +329,72 @@ void PPU::Tick() {
           }
         }
       }
+    }
+  }
+
+  // Render
+  if (scanline_ >= 0 && scanline_ <= 239 && cycles_ >= 1 && cycles_ <= 256) {
+    uint8_t bg_palette_idx = 0;
+    uint8_t sp_palette_idx = 0;
+    Color final_color;
+
+    // Background
+    if (PPUMASK.BACKGROUND_RENDERING) {
+      uint16_t mask = (0x8000 >> x);
+      uint8_t plane0 = (bg_ls_shift & mask) > 0;
+      uint8_t plane1 = (bg_ms_shift & mask) > 0;
+
+      mask = (0x80 >> x);
+      uint8_t als = (attr_ls_shift & mask) > 0;
+      uint8_t ams = (attr_ms_shift & mask) > 0;
+
+      bg_palette_idx = plane0 + plane1 * 2;
+      uint8_t coloridx = ReadVRAM(0x3F00 + (ams * 2 + als) * 4 + bg_palette_idx);
+      final_color = kColors[coloridx];
+
+      // Shift registers stuff.
+      // Transfer to high 8 bit.
+      bg_ls_shift <<= 1;
+      bg_ms_shift <<= 1;
+
+      attr_ls_shift <<= 1;
+      attr_ms_shift <<= 1;
+      attr_ls_shift |= attr_ls_latch;
+      attr_ms_shift |= attr_ms_latch;
+    }
+
+    // Sprite
+    if (PPUMASK.SPRITE_RENDERING) {
+      const Color colors[] = {
+        BLACK,
+        WHITE,
+        BLUE,
+        RED
+      };
+      for (int i = 0; i < sprites_count_; ++i) {
+        sprites_[i].x--;
+        if (sprites_[i].x <= 0 && sprites_[i].x >= -7) {
+          uint8_t plane0 = (sprites_[i].pattern_ls_shift & 0x80) > 0;
+          uint8_t plane1 = (sprites_[i].pattern_ms_shift & 0x80) > 0;
+          sp_palette_idx = plane0 + plane1 * 2;
+
+          if (bg_palette_idx == 0) {
+            if (sp_palette_idx != 0) {
+              final_color = colors[sp_palette_idx];
+            }
+          } else {
+            if (sp_palette_idx != 0 && !sprites_[i].priority) {
+              final_color = colors[sp_palette_idx];
+            }
+          }
+
+          sprites_[i].pattern_ls_shift <<= 1;
+          sprites_[i].pattern_ms_shift <<= 1;
+        }
+      }
+    }
+    if (PPUMASK.SPRITE_RENDERING || PPUMASK.BACKGROUND_RENDERING) {
+      pixels_[scanline_ * 256 + (cycles_ - 1)] = final_color;
     }
   }
 
