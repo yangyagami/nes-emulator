@@ -237,8 +237,8 @@ void PPU::Tick() {
             case kLessEight: {
               if (m == 0) {
                 // Check y-coord whether in range.
-                if ((scanline_ + 1) >= oam_data_latch_ &&
-                    (scanline_ + 1) <= oam_data_latch_ + 8) {
+                if (scanline_ >= oam_data_latch_ &&
+                    scanline_ <= oam_data_latch_ + 8) {
                   oam_size_++;
                   if (oam_size_ > 8) {
                     oam_size_ = 8;
@@ -274,8 +274,8 @@ void PPU::Tick() {
               // We don't read oam.
               if (m == 0) {
                 // Check y-coord whether in range.
-                if ((scanline_ + 1) >= oam_data_latch_ &&
-                    (scanline_ + 1) <= oam_data_latch_ + 8) {
+                if (scanline_ >= oam_data_latch_ &&
+                    scanline_ <= oam_data_latch_ + 8) {
                   PPUSTATUS.SPRITE_OVERFLOW = 1;
                   m++;
                 } else {
@@ -328,19 +328,43 @@ void PPU::Tick() {
             }
             case 2: {
               // Tile number
-              uint8_t tile_number = oam_[sprites_idx_ * 4 + (tmp - 1)];
+              sprites_[sprites_idx_].tile_number = oam_[sprites_idx_ * 4 + (tmp - 1)];
+              break;
+            }
+            case 3: {
+              // Attributes
+              uint8_t attr = oam_[sprites_idx_ * 4 + (tmp - 1)];
+              sprites_[sprites_idx_].flip_h = (attr & 0x40) > 0;
+              sprites_[sprites_idx_].flip_v = (attr & 0x80) > 0;
+              sprites_[sprites_idx_].priority = (attr & 0x20) > 0;
+
               if (PPUCTRL.SPRITE_SIZE == 0) {
                 // 8 x 8
+                uint8_t tile_number = sprites_[sprites_idx_].tile_number;
                 uint16_t base =
                     PPUCTRL.SPRITE_PATTERN_ADDR * 0x1000 + tile_number * 16;
-                uint16_t pattern_addr =
-                    base + (sprites_[sprites_idx_].y - scanline_ - 1);
+                uint16_t pattern_addr = 0;
+
+                if (sprites_[sprites_idx_].flip_v) {
+                  pattern_addr =
+                      base + (7 - sprites_[sprites_idx_].y + scanline_);
+                } else {
+                  pattern_addr =
+                      base + (sprites_[sprites_idx_].y - scanline_);
+                }
                 sprites_[sprites_idx_].pattern_ls_shift =
                     ReadVRAM(pattern_addr);
                 sprites_[sprites_idx_].pattern_ms_shift =
                     ReadVRAM(pattern_addr + 8);
               } else {
                 // 8 x 16
+              }
+
+              if (sprites_[sprites_idx_].flip_h) {
+                sprites_[sprites_idx_].pattern_ls_shift =
+                    flip_h(sprites_[sprites_idx_].pattern_ls_shift);
+                sprites_[sprites_idx_].pattern_ms_shift =
+                    flip_h(sprites_[sprites_idx_].pattern_ms_shift);
               }
               break;
             }
@@ -574,6 +598,16 @@ void PPU::IncrementVerticalV() {
     }
     v.raw = (v.raw & ~0x03E0) | (y << 5);     // put coarse Y back into v
   }
+}
+
+uint8_t PPU::flip_h(uint8_t arg) {
+  uint8_t result = 0;
+  for (int i = 0; i < 8; ++i) {
+    uint8_t bit = (arg & (0x1 << i)) > 0;
+    result |= bit;
+    result <<= 1;
+  }
+  return result;
 }
 
 }  // namespace nes

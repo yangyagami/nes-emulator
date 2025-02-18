@@ -43,6 +43,8 @@ class PPU {
   void IncrementHorizontalV();
   void IncrementVerticalV();
 
+  uint8_t flip_h(uint8_t arg);
+
  private:
   // See https://www.nesdev.org/wiki/PPU_registers#PPUCTRL
   union {
@@ -124,10 +126,14 @@ class PPU {
   } sprite_evaluation_state_ = kLessEight;
 
   struct Sprite {
+    uint8_t tile_number;
     uint8_t pattern_ls_shift;
     uint8_t pattern_ms_shift;
     int x;
     int y;
+    bool flip_h;
+    bool flip_v;
+    bool priority;  // false: front, true: back
   };
 
   std::array<Sprite, 8> sprites_;

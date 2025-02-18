@@ -44,14 +44,17 @@ int Machine::Run() {
       if (debug) {
         std::cout << std::format("{:#x} {}\n", cpu_.PC, cpu_.Disassemble(cpu_.PC));
       }
+
       cpu_.Tick();
-      for (int i = 0; i < 3 * cpu_.cycles; ++i) {
+      int cycles = cpu_.cycles;
+      while (--cpu_.cycles > 0);
+
+      for (int i = 0; i < 3 * cycles; ++i) {
         ppu_.Tick();
         if (ppu_.one_frame_finished()) {
           out = true;
         }
       }
-      while (--cpu_.cycles > 0);
     }
 
     UpdateTexture(texture, ppu_.pixels().data());
@@ -72,6 +75,20 @@ int Machine::Run() {
     }
     if (IsKeyReleased(KEY_W)) {
       joypad_.SetKey(Joypad::kUp, false);
+    }
+
+    if (IsKeyDown(KEY_A)) {
+      joypad_.SetKey(Joypad::kLeft, true);
+    }
+    if (IsKeyReleased(KEY_A)) {
+      joypad_.SetKey(Joypad::kLeft, false);
+    }
+
+    if (IsKeyDown(KEY_D)) {
+      joypad_.SetKey(Joypad::kRight, true);
+    }
+    if (IsKeyReleased(KEY_D)) {
+      joypad_.SetKey(Joypad::kRight, false);
     }
 
     if (IsKeyDown(KEY_ENTER)) {
@@ -109,6 +126,7 @@ int Machine::Run() {
   }
 
   UnloadTexture(texture);
+  UnloadImage(image);
   return 0;
 }
 
