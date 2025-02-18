@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <array>
-#include <queue>
 
 #include "raylib.h"
 
@@ -127,14 +126,16 @@ class PPU {
   struct Sprite {
     uint8_t pattern_ls_shift;
     uint8_t pattern_ms_shift;
-    uint8_t x;
+    int x;
+    int y;
   };
 
-  std::queue<Sprite> sprites_;
+  std::array<Sprite, 8> sprites_;
+  int sprites_count_ = 0;
+  uint8_t sprites_idx_ = 0;
   uint16_t sprite_pattern_ls_shift_;
   uint16_t sprite_pattern_ms_shift_;
 
-  uint8_t oam_idx_ = 0;
   uint8_t oam_size_ = 0;
   bool n_overflow_ = false;
   std::array<uint8_t, 4 * 8> oam_;
