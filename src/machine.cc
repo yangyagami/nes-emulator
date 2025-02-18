@@ -32,6 +32,10 @@ int Machine::Run() {
   cpu_.PC = bus_.CpuRead16Bit(0xFFFC);
   cpu_.SP = 0xFD;
 
+  Image image = GenImageColor(256, 240, WHITE);
+
+  Texture2D texture = LoadTextureFromImage(image);
+
   bool debug = false;
 
   while (!WindowShouldClose()) {
@@ -49,6 +53,8 @@ int Machine::Run() {
       }
       while (--cpu_.cycles > 0);
     }
+
+    UpdateTexture(texture, ppu_.pixels().data());
 
     if (IsKeyPressed(KEY_P)) {
       debug = !debug;
@@ -90,18 +96,19 @@ int Machine::Run() {
     const float kCellWidth = kGameWidth / 256.0f;
     const float kCellHeight = GetRenderHeight() / 240.0f;
 
-    for (int y = 0; y < 240; ++y) {
-      for (int x = 0; x < 256; ++x) {
-        Vector2 pos = { x * kCellWidth, y * kCellHeight };
-        Vector2 size = { kCellWidth, kCellHeight };
-        DrawRectangleV(pos, size, ppu_.pixels()[y * 256 + x]);
-      }
-    }
+    DrawTexturePro(texture,
+                   { 0, 0, 256, 240 },
+                   { 0, 0, GetRenderWidth(), GetRenderHeight() },
+                   { 0, 0 },
+                   0.0,
+                   WHITE);
 
     // ppu_.TestRenderNametable(0x2000);
     // ppu_.TestRenderSprite();
     EndDrawing();
   }
+
+  UnloadTexture(texture);
   return 0;
 }
 
