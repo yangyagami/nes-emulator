@@ -56,6 +56,8 @@ void Cpu::Reset() {
   P.INTERRUPT_DISABLE = 1;
   P.UNUSED = 1;
 
+  nmi_flipflop = false;
+
   cycles = 0;
 }
 

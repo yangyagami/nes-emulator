@@ -240,7 +240,7 @@ void PPU::Tick() {
               if (m == 0) {
                 // Check y-coord whether in range.
                 if (scanline_ >= oam_data_latch_ &&
-                    scanline_ <= oam_data_latch_ + 8) {
+                    scanline_ <= oam_data_latch_ + 7) {
                   oam_size_++;
                   if (oam_size_ > 8) {
                     oam_size_ = 8;
@@ -277,7 +277,7 @@ void PPU::Tick() {
               if (m == 0) {
                 // Check y-coord whether in range.
                 if (scanline_ >= oam_data_latch_ &&
-                    scanline_ <= oam_data_latch_ + 8) {
+                    scanline_ <= oam_data_latch_ + 7) {
                   PPUSTATUS.SPRITE_OVERFLOW = 1;
                   m++;
                 } else {
