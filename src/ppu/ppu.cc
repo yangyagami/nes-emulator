@@ -210,11 +210,13 @@ void PPU::Tick() {
         for (int i = 0; i < sprites_count_; ++i) {
           sprites_[i].x--;
           if (sprites_[i].x <= 0 && sprites_[i].x >= -7) {
-            uint8_t plane0 = (sprites_[i].pattern_ls_shift & 0x80) > 0;
-            uint8_t plane1 = (sprites_[i].pattern_ms_shift & 0x80) > 0;
-            uint8_t color_idx = plane0 + plane1 * 2;
+            if (!sprites_[i].priority) {
+              uint8_t plane0 = (sprites_[i].pattern_ls_shift & 0x80) > 0;
+              uint8_t plane1 = (sprites_[i].pattern_ms_shift & 0x80) > 0;
+              uint8_t color_idx = plane0 + plane1 * 2;
 
-            pixels_[scanline_ * 256 + (cycles_ - 1)] = colors[color_idx];
+              pixels_[scanline_ * 256 + (cycles_ - 1)] = colors[color_idx];
+            }
 
             sprites_[i].pattern_ls_shift <<= 1;
             sprites_[i].pattern_ms_shift <<= 1;
