@@ -622,9 +622,9 @@ void PPU::IncrementVerticalV() {
 uint8_t PPU::flip_h(uint8_t arg) {
   uint8_t result = 0;
   for (int i = 0; i < 8; ++i) {
+    result <<= 1;
     uint8_t bit = (arg & (0x1 << i)) > 0;
     result |= bit;
-    result <<= 1;
   }
   return result;
 }
