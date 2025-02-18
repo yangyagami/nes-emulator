@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <array>
+#include <queue>
 
 #include "raylib.h"
 
@@ -110,6 +111,8 @@ class PPU {
   uint8_t attr_ls_latch;
   uint8_t attr_ms_latch;
 
+  uint8_t read_buffer = 0;
+
   uint8_t tile_id;
   uint8_t attr;
   uint8_t bg_pattern_ls;
@@ -120,6 +123,16 @@ class PPU {
     kGreaterEight,
     kFail,
   } sprite_evaluation_state_ = kLessEight;
+
+  struct Sprite {
+    uint8_t pattern_ls_shift;
+    uint8_t pattern_ms_shift;
+    uint8_t x;
+  };
+
+  std::queue<Sprite> sprites_;
+  uint16_t sprite_pattern_ls_shift_;
+  uint16_t sprite_pattern_ms_shift_;
 
   uint8_t oam_idx_ = 0;
   uint8_t oam_size_ = 0;

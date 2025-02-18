@@ -81,7 +81,8 @@ uint8_t PPU::Read(uint16_t addr) {
       return OAM[OAMADDR];
     }
     case 0x2007: {
-      uint8_t ret = ReadVRAM(v.raw);
+      uint8_t ret = read_buffer;
+      read_buffer = ReadVRAM(v.raw);
       v.raw += (PPUCTRL.VRAM_ADDR == 0 ? 1 : 32);
       return ret;
     }
@@ -100,102 +101,6 @@ void PPU::Tick() {
     The line numbers given here correspond to how the internal PPU frame counters count lines.
    */
   one_frame_finished_ = false;
-
-  // Sprite evaluation
-  // See https://www.nesdev.org/wiki/PPU_sprite_evaluation#References
-  if (scanline_ >= 1 && scanline_ <= 239) {
-    if (cycles_ >= 1 && cycles_ <= 64) {
-      if (cycles_ % 8 == 0) {
-        oam_[cycles_ / 8 - 1] = 0xFF;
-      }
-    } else if (cycles_ >= 65 && cycles_ <= 256) {
-      if (cycles_ % 2 != 0) {  // odd cycles
-        oam_data_latch_ = OAM[n * 4 + m];
-      } else {  // even cycles
-        switch (sprite_evaluation_state_) {
-          case kLessEight: {
-            if (m == 0) {
-              // Check y-coord whether in range.
-              if (scanline_ >= oam_data_latch_ &&
-                  scanline_ <= oam_data_latch_ + 8) {
-                oam_[(oam_size_ - 1) * 4 + m] = oam_data_latch_;
-                m++;
-              } else {
-                m = 0;
-                n++;
-
-                if (n >= 64) {
-                  sprite_evaluation_state_ = kFail;
-                }
-              }
-            } else {
-              oam_[(oam_size_ - 1) * 4 + m] = oam_data_latch_;
-              m++;
-              if (m >= 4) {
-                m = 0;
-                n++;
-                oam_size_++;
-                if (n >= 64) {
-                  sprite_evaluation_state_ = kFail;
-                } else if (oam_size_ > 8) {
-                  sprite_evaluation_state_ = kGreaterEight;
-                }
-              }
-            }
-            break;
-          }
-          case kGreaterEight: {
-            // We don't read oam.
-            if (m == 0) {
-              // Check y-coord whether in range.
-              if (scanline_ >= oam_data_latch_ &&
-                  scanline_ <= oam_data_latch_ + 8) {
-                PPUSTATUS.SPRITE_OVERFLOW = 1;
-                m++;
-              } else {
-                n++;
-                m++;
-
-                // Make sure the m not leaked
-                if (m >= 4) {
-                  m = 0;
-                }
-
-                if (n >= 64) {
-                  sprite_evaluation_state_ = kFail;
-                  n = 0;
-                  m = 0;
-                }
-              }
-            } else {
-              m++;
-              if (m >= 4) {
-                m = 0;
-                n++;
-              }
-            }
-            break;
-          }
-          case kFail: {
-            // We just do nothing here.
-            break;
-          }
-        }
-      }
-    } else if (cycles_ >= 257 && cycles_ <= 320) {
-      if (cycles_ == 257) {
-        oam_idx_ = 0;
-      }
-
-      int tmp = cycles_ % 8;
-      switch (cycles_ % 8) {
-        case 1: {
-          uint8_t sprite_y = oam_[oam_idx_ * 4 + (tmp - 1)];
-          break;
-        }
-      }
-    }
-  }
 
   // Background
   if (PPUMASK.BACKGROUND_RENDERING &&
@@ -290,6 +195,162 @@ void PPU::Tick() {
       v.FINE_Y = t.FINE_Y;
     }
   }
+
+  // Sprite evaluation
+  // See https://www.nesdev.org/wiki/PPU_sprite_evaluation#References
+  // if (PPUMASK.SPRITE_RENDERING) {
+  //   if (scanline_ >= 0 && scanline_ <= 239) {
+  //     if (cycles_ >= 1 && cycles_ <= 256) {
+  //       if (sprite_pattern_ls_shift_ != 0 && sprite_pattern_ms_shift_ != 0) {
+  //         const Color colors[] = {
+  //           BLACK,
+  //           WHITE,
+  //           BLUE,
+  //           RED
+  //         };
+  //         uint8_t plane0 = (sprite_pattern_ls_shift_ & 0x8000) > 0;
+  //         uint8_t plane1 = (sprite_pattern_ms_shift_ & 0x8000) > 0;
+  //         uint8_t color_idx = plane0 + plane1 * 2;
+
+  //         pixels_[scanline_ * 256 + (cycles_ - 1)] = colors[color_idx];
+
+  //         sprite_pattern_ls_shift_ <<= 1;
+  //         sprite_pattern_ms_shift_ <<= 1;
+  //       }
+
+  //       if (!sprites_.empty()) {
+  //         sprites_.front().x--;
+
+  //         if (sprites_.front().x <= 0) {
+  //           Sprite &sprite = sprites_.front();
+  //           sprite_pattern_ls_shift_ =
+  //               (sprite_pattern_ls_shift_ & 0xFF00) | sprite.pattern_ls_shift;
+  //           sprite_pattern_ms_shift_ =
+  //               (sprite_pattern_ms_shift_ & 0xFF00) | sprite.pattern_ms_shift;
+  //           sprites_.pop();
+  //         }
+  //       }
+  //     }
+
+  //     if (cycles_ >= 1 && cycles_ <= 64) {
+  //       if (cycles_ % 8 == 0) {
+  //         oam_[cycles_ / 8 - 1] = 0xFF;
+  //       }
+  //     } else if (cycles_ >= 65 && cycles_ <= 256) {
+  //       if (cycles_ % 2 != 0) {  // odd cycles
+  //         oam_data_latch_ = OAM[n * 4 + m];
+  //       } else {  // even cycles
+  //         switch (sprite_evaluation_state_) {
+  //           case kLessEight: {
+  //             if (m == 0) {
+  //               // Check y-coord whether in range.
+  //               if (scanline_ >= oam_data_latch_ &&
+  //                   scanline_ <= oam_data_latch_ + 8) {
+  //                 oam_[(oam_size_ - 1) * 4 + m] = oam_data_latch_;
+  //                 m++;
+  //               } else {
+  //                 m = 0;
+  //                 n++;
+
+  //                 if (n >= 64) {
+  //                   sprite_evaluation_state_ = kFail;
+  //                 }
+  //               }
+  //             } else {
+  //               oam_[(oam_size_ - 1) * 4 + m] = oam_data_latch_;
+  //               m++;
+  //               if (m >= 4) {
+  //                 m = 0;
+  //                 n++;
+  //                 oam_size_++;
+  //                 if (n >= 64) {
+  //                   sprite_evaluation_state_ = kFail;
+  //                 } else if (oam_size_ > 8) {
+  //                   sprite_evaluation_state_ = kGreaterEight;
+  //                 }
+  //               }
+  //             }
+  //             break;
+  //           }
+  //           case kGreaterEight: {
+  //             // We don't read oam.
+  //             if (m == 0) {
+  //               // Check y-coord whether in range.
+  //               if (scanline_ >= oam_data_latch_ &&
+  //                   scanline_ <= oam_data_latch_ + 8) {
+  //                 PPUSTATUS.SPRITE_OVERFLOW = 1;
+  //                 m++;
+  //               } else {
+  //                 n++;
+  //                 m++;
+
+  //                 // Make sure the m not leaked
+  //                 if (m >= 4) {
+  //                   m = 0;
+  //                 }
+
+  //                 if (n >= 64) {
+  //                   sprite_evaluation_state_ = kFail;
+  //                   n = 0;
+  //                   m = 0;
+  //                 }
+  //               }
+  //             } else {
+  //               m++;
+  //               if (m >= 4) {
+  //                 m = 0;
+  //                 n++;
+  //               }
+  //             }
+  //             break;
+  //           }
+  //           case kFail: {
+  //             // We just do nothing here.
+  //             break;
+  //           }
+  //         }
+  //       }
+  //     } else if (cycles_ >= 257 && cycles_ <= 320) {
+  //       if (cycles_ == 257) {
+  //         oam_idx_ = 0;
+  //         // TODO(yangsiyu): Clear sprites.
+  //         // sprites_.clear();
+  //         sprites_.push(Sprite{});
+  //       }
+
+  //       int tmp = cycles_ % 8;
+
+  //       switch (cycles_ % 8) {
+  //         case 0: {
+  //           oam_idx_++;
+  //           sprites_.push(Sprite{});
+  //           break;
+  //         }
+  //         case 2: {
+  //           // Tile number
+  //           uint8_t tile_number = oam_[oam_idx_ * 4 + (tmp - 1)];
+  //           if (PPUCTRL.SPRITE_SIZE == 0) {
+  //             // 8 x 8
+  //             uint16_t pattern_addr =
+  //                 PPUCTRL.SPRITE_PATTERN_ADDR + tile_number * 16 + (scanline_ + 1);
+  //             sprites_.back().pattern_ls_shift =
+  //                 ReadVRAM(pattern_addr);
+  //             sprites_.back().pattern_ms_shift =
+  //                 ReadVRAM(pattern_addr + 8);
+  //           } else {
+  //             // 8 x 16
+  //           }
+  //           break;
+  //         }
+  //         case 4: {
+  //           // X coord
+  //           sprites_.back().x = oam_[oam_idx_ * 4 + (tmp - 1)];
+  //           break;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   // Pre scanline
   if (scanline_ == kScanLine) {
