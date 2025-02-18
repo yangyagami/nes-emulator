@@ -347,10 +347,10 @@ void PPU::Tick() {
 
                 if (sprites_[sprites_idx_].flip_v) {
                   pattern_addr =
-                      base + (7 - sprites_[sprites_idx_].y + scanline_);
+                      base + 7 - (scanline_ - sprites_[sprites_idx_].y);
                 } else {
                   pattern_addr =
-                      base + (sprites_[sprites_idx_].y - scanline_);
+                      base + (scanline_ - sprites_[sprites_idx_].y);
                 }
                 sprites_[sprites_idx_].pattern_ls_shift =
                     ReadVRAM(pattern_addr);
