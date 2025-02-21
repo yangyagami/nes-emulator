@@ -131,6 +131,7 @@ class PPU {
     uint8_t pattern_ms_shift;
     int x;
     int y;
+    uint8_t palette;
     bool flip_h;
     bool flip_v;
     bool priority;  // false: front, true: back

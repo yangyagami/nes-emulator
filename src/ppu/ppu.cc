@@ -287,6 +287,7 @@ void PPU::Tick() {
             case 3: {
               // Attributes
               uint8_t attr = oam_[sprites_idx_ * 4 + (tmp - 1)];
+              sprites_[sprites_idx_].palette = (attr & 0x3);
               sprites_[sprites_idx_].flip_h = (attr & 0x40) > 0;
               sprites_[sprites_idx_].flip_v = (attr & 0x80) > 0;
               sprites_[sprites_idx_].priority = (attr & 0x20) > 0;
@@ -365,26 +366,22 @@ void PPU::Tick() {
 
     // Sprite
     if (PPUMASK.SPRITE_RENDERING) {
-      const Color colors[] = {
-        BLACK,
-        WHITE,
-        BLUE,
-        RED
-      };
       for (int i = 0; i < sprites_count_; ++i) {
         sprites_[i].x--;
         if (sprites_[i].x <= 0 && sprites_[i].x >= -7) {
           uint8_t plane0 = (sprites_[i].pattern_ls_shift & 0x80) > 0;
           uint8_t plane1 = (sprites_[i].pattern_ms_shift & 0x80) > 0;
           sp_palette_idx = plane0 + plane1 * 2;
+          uint8_t palette = sprites_[i].palette;
+          uint8_t coloridx = ReadVRAM(0x3F00 + (4 + palette) * 4 + sp_palette_idx);
 
           if (bg_palette_idx == 0) {
             if (sp_palette_idx != 0) {
-              final_color = colors[sp_palette_idx];
+              final_color = kColors[coloridx];
             }
           } else {
             if (sp_palette_idx != 0 && !sprites_[i].priority) {
-              final_color = colors[sp_palette_idx];
+              final_color = kColors[coloridx];
             }
           }
 
