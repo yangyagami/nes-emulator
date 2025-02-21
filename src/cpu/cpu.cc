@@ -24,6 +24,7 @@ void Cpu::Tick() {
     NMI();
   }
 
+  // std::cout << std::format("PC: {:#x}\n", PC);
   // Fetch opcode
   uint8_t opcode = bus_.CpuRead8Bit(PC);
 
@@ -365,7 +366,7 @@ void Cpu::LSR(Opcode &opcode_obj) {
 }
 
 void Cpu::NMI() {
-  uint16_t new_pc = PC + 2;
+  uint16_t new_pc = PC;
 
   Push(new_pc >> 8);  // high bytes
   Push((new_pc & 0xFF));  // low bytes
