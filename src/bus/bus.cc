@@ -90,7 +90,7 @@ uint8_t Bus::CpuRead8Bit(uint16_t address) {
             return cartridge_->prg_rom[address - 0xC000];
           }
         } else {
-          nes_assert(false, std::format("Unsupported NROM-256"));
+          return cartridge_->prg_rom[address - 0x8000];
         }
       } else {
         nes_assert(false, std::format("Unsupported mapper: {:#x}",

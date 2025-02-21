@@ -569,6 +569,10 @@ uint8_t PPU::ReadVRAM(uint16_t addr) {
 }
 
 void PPU::WriteVRAM(uint16_t addr, uint8_t v) {
+  if (!(addr >= 0 && addr <= 0x3FFF)) {
+    nes_assert(false, std::format("Unsupported vram write: {:#x}", addr));
+  }
+
   if (addr >= 0x2000 && addr <= 0x23FF) {
     vram_[addr - 0x2000] = v;
   } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 0) {
@@ -580,13 +584,9 @@ void PPU::WriteVRAM(uint16_t addr, uint8_t v) {
       vram_[addr - 0x2800] = v;
     } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
       palettes_[addr - 0x3F00] = v;
-    } else {
-      nes_assert(false, std::format("Unsupported vram write: {:#x}", addr));
     }
   } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 1) {
     nes_assert(false, std::format("Unsupported vram write for vertical mirroring: {:#x}", addr));
-  } else {
-    nes_assert(false, std::format("Unsupported vram write: {:#x}", addr));
   }
 }
 
