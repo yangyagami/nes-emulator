@@ -362,7 +362,21 @@ void PPU::Tick() {
       uint8_t ams = (attr_ms_shift & mask) > 0;
 
       bg_palette_idx = plane0 + plane1 * 2;
-      uint8_t coloridx = ReadVRAM(0x3F00 + (ams * 2 + als) * 4 + bg_palette_idx);
+
+      if (cycles_ >= 1 && cycles_ <= 8) {
+        if (PPUMASK.BACKGROUND == 0) {
+          // Hide left 8 pixels of background
+          bg_palette_idx = 0;
+        }
+      }
+
+      uint8_t coloridx;
+      if (bg_palette_idx == 0) {
+        coloridx = ReadVRAM(0x3F00);
+      } else {
+        coloridx = ReadVRAM(0x3F00 + (ams * 2 + als) * 4 + bg_palette_idx);
+      }
+
       final_color = kColors[coloridx];
     }
 
@@ -373,7 +387,16 @@ void PPU::Tick() {
         if (sprites_[i].x <= 0 && sprites_[i].x >= -7) {
           uint8_t plane0 = (sprites_[i].pattern_ls_shift & 0x80) > 0;
           uint8_t plane1 = (sprites_[i].pattern_ms_shift & 0x80) > 0;
+
           sp_palette_idx = plane0 + plane1 * 2;
+
+          if (cycles_ >= 1 && cycles_ <= 8) {
+            if (PPUMASK.SPRITES == 0) {
+              // Hide left 8 pixels of sprite
+              sp_palette_idx = 0;
+            }
+          }
+
           uint8_t palette = sprites_[i].palette;
           uint8_t coloridx = ReadVRAM(0x3F00 + (4 + palette) * 4 + sp_palette_idx);
 
@@ -387,6 +410,9 @@ void PPU::Tick() {
           if (bg_palette_idx == 0) {
             if (sp_palette_idx != 0) {
               final_color = kColors[coloridx];
+            } else {
+              // Backdrop color
+              final_color = kColors[ReadVRAM(0x3F00)];
             }
           } else {
             if (sp_palette_idx != 0 && !sprites_[i].priority) {
@@ -481,7 +507,7 @@ void PPU::TestRenderSprite() {
     RED,
   };
 
-  for (int i = 0; i < OAM.size(); i += 4) {
+  for (unsigned int i = 0; i < OAM.size(); i += 4) {
     uint8_t sy = OAM[i];
     uint8_t sx = OAM[i + 3];
 
@@ -523,6 +549,20 @@ void PPU::TestRenderSprite() {
   }
 }
 
+void PPU::TestPalettes() {
+  const int kCellSize = 30;
+  int y = 0;
+  int x = 0;
+  for (int i = 0; i < palettes_.size(); i++) {
+    DrawRectangle(100 + x, y, kCellSize, kCellSize, kColors[ReadVRAM(0x3F00 + i)]);
+    x += kCellSize;
+    if ((i + 1) % 4 == 0) {
+      y += kCellSize + 10;
+      x = 0;
+    }
+  }
+}
+
 uint8_t PPU::ReadVRAM(uint16_t addr) {
   if (addr > 0x3FFF) {
     nes_assert(false, std::format("Unsupported vram read: {:#x}", addr));
@@ -534,7 +574,7 @@ uint8_t PPU::ReadVRAM(uint16_t addr) {
   } else if (addr >= 0x2000 && addr <= 0x23FF) {
     return vram_[addr - 0x2000];
   } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
-    return palettes_[addr - 0x3F00];
+    return palettes_[(addr - 0x3F00) % 0x20];
   } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 0) {
     if (addr >= 0x2400 && addr <= 0x27FF) {
       return vram_[addr - 0x2400];
@@ -568,7 +608,11 @@ void PPU::WriteVRAM(uint16_t addr, uint8_t v) {
   if (addr >= 0x2000 && addr <= 0x23FF) {
     vram_[addr - 0x2000] = v;
   } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
-    palettes_[addr - 0x3F00] = v;
+    uint16_t tmp_addr = (addr - 0x3F00) % 0x20;
+    if (tmp_addr == 0x10) {
+      palettes_[0] = v;
+    }
+    palettes_[(addr - 0x3F00) % 0x20] = v;
   } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 0) {
     if (addr >= 0x2400 && addr <= 0x27FF) {
       vram_[addr - 0x2400] = v;

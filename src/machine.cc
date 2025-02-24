@@ -8,7 +8,8 @@
 namespace nes {
 
 Machine::Machine(const std::string &path)
-    : cpu_(bus_),
+    : bus_(),
+      cpu_(bus_),
       ppu_(cpu_, cartridge_),
       rom_path_(path) {
 }
@@ -113,20 +114,16 @@ int Machine::Run() {
     BeginDrawing();
     ClearBackground(GRAY);
 
-    const float kGameWidth = GetRenderWidth() * 0.80f;
-
-    const float kCellWidth = kGameWidth / 256.0f;
-    const float kCellHeight = GetRenderHeight() / 240.0f;
-
     DrawTexturePro(texture,
                    { 0, 0, 256, 240 },
-                   { 0, 0, GetRenderWidth(), GetRenderHeight() },
+                   { 0, 0, 1.0f * GetRenderWidth(), 1.0f * GetRenderHeight() },
                    { 0, 0 },
                    0.0,
                    WHITE);
 
     // ppu_.TestRenderNametable(0x2000);
     // ppu_.TestRenderSprite();
+    // ppu_.TestPalettes();
     EndDrawing();
   }
 
