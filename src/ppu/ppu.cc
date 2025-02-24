@@ -109,6 +109,16 @@ void PPU::Tick() {
       ((scanline_ >= 0 && scanline_ <= 239) || scanline_ == kScanLine)) {
     // See https://www.nesdev.org/w/images/default/4/4f/Ppu.svg
     if ((cycles_ >= 1 && cycles_ <= 256) || (cycles_ >= 321 && cycles_ <= 336)) {
+      // Shift registers stuff.
+      // Transfer to high 8 bit.
+      bg_ls_shift <<= 1;
+      bg_ms_shift <<= 1;
+
+      attr_ls_shift <<= 1;
+      attr_ms_shift <<= 1;
+      attr_ls_shift |= attr_ls_latch;
+      attr_ms_shift |= attr_ms_latch;
+
       switch (cycles_ % 8) {
         case 2: {  // Nametable
           uint16_t nm_addr = 0x2000 | (v.raw & 0x0FFF);
@@ -354,16 +364,6 @@ void PPU::Tick() {
       bg_palette_idx = plane0 + plane1 * 2;
       uint8_t coloridx = ReadVRAM(0x3F00 + (ams * 2 + als) * 4 + bg_palette_idx);
       final_color = kColors[coloridx];
-
-      // Shift registers stuff.
-      // Transfer to high 8 bit.
-      bg_ls_shift <<= 1;
-      bg_ms_shift <<= 1;
-
-      attr_ls_shift <<= 1;
-      attr_ms_shift <<= 1;
-      attr_ls_shift |= attr_ls_latch;
-      attr_ms_shift |= attr_ms_latch;
     }
 
     // Sprite
@@ -376,6 +376,13 @@ void PPU::Tick() {
           sp_palette_idx = plane0 + plane1 * 2;
           uint8_t palette = sprites_[i].palette;
           uint8_t coloridx = ReadVRAM(0x3F00 + (4 + palette) * 4 + sp_palette_idx);
+
+          // Sprite 0 hit detect
+          if (i == 0) {
+            if (bg_palette_idx != 0 && sp_palette_idx != 0) {
+              PPUSTATUS.SPRITE_HIT = 1;
+            }
+          }
 
           if (bg_palette_idx == 0) {
             if (sp_palette_idx != 0) {
@@ -402,6 +409,9 @@ void PPU::Tick() {
     // TODO(yangsiyu):
     if (cycles_ == 1) {
       PPUSTATUS.VBLANK = 0;
+      if (PPUSTATUS.SPRITE_HIT) {
+        PPUSTATUS.SPRITE_HIT = 0;
+      }
     }
   }
 
@@ -509,45 +519,22 @@ void PPU::TestRenderSprite() {
           }
         }
       }
-
-      // tile_id += 1;
-      // // Bottom
-      // for (int j = tile_id * 16; j < tile_id * 16 + 8; ++j) {
-      //   uint8_t plane0 = cartridge_.chr_rom[pattern_addr + j];
-      //   uint8_t plane1 = cartridge_.chr_rom[pattern_addr + j + 8];
-
-      //   if (!flip_h) {
-      //     for (int k = 7; k >= 0; --k) {
-      //       uint8_t plane0_bit = (plane0 >> k) & 0x1;
-      //       uint8_t plane1_bit = (plane1 >> k) & 0x1;
-      //       uint8_t color_idx = plane0_bit + plane1_bit * 2;
-
-      //       DrawRectangle(sx * kCellSize + (7 - k) * kCellSize,
-      //                     sy + (8 * kCellSize) + (j - tile_id * 16) * kCellSize,
-      //                     kCellSize, kCellSize, colors[color_idx]);
-      //     }
-      //   } else {
-      //     for (int k = 0; k < 8; ++k) {
-      //       uint8_t plane0_bit = (plane0 >> k) & 0x1;
-      //       uint8_t plane1_bit = (plane1 >> k) & 0x1;
-      //       uint8_t color_idx = plane0_bit + plane1_bit * 2;
-
-      //       DrawRectangle(sx * kCellSize + k * kCellSize,
-      //                     sy + (8 * kCellSize) + (j - tile_id * 16) * kCellSize,
-      //                     kCellSize, kCellSize, colors[color_idx]);
-      //     }
-      //   }
-      // }
     }
   }
 }
 
 uint8_t PPU::ReadVRAM(uint16_t addr) {
+  if (addr > 0x3FFF) {
+    nes_assert(false, std::format("Unsupported vram read: {:#x}", addr));
+  }
+
   if (addr <= 0x1FFF) {
     // PATTERN TABLE
     return cartridge_.chr_rom[addr];
   } else if (addr >= 0x2000 && addr <= 0x23FF) {
     return vram_[addr - 0x2000];
+  } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+    return palettes_[addr - 0x3F00];
   } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 0) {
     if (addr >= 0x2400 && addr <= 0x27FF) {
       return vram_[addr - 0x2400];
@@ -555,25 +542,33 @@ uint8_t PPU::ReadVRAM(uint16_t addr) {
       return vram_[addr - 0x2400];
     } else if (addr >= 0x2C00 && addr <= 0x2FFF) {
       return vram_[addr - 0x2800];
-    } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
-      return palettes_[addr - 0x3F00];
     } else {
       nes_assert(false, std::format("Unsupported vram read: {:#x}", addr));
     }
   } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 1) {
-    nes_assert(false, std::format("Unsupported vram read for vertical mirroring: {:#x}", addr));
+    if (addr >= 0x2400 && addr <= 0x27FF) {
+      return vram_[addr - 0x2000];
+    } else if (addr >= 0x2800 && addr <= 0x2BFF) {
+      return vram_[addr - 0x2800];
+    } else if (addr >= 0x2C00 && addr <= 0x2FFF) {
+      return vram_[addr - 0x2800];
+    } else {
+      nes_assert(false, std::format("Unsupported vram read: {:#x}", addr));
+    }
   } else {
     nes_assert(false, std::format("Unsupported vram read: {:#x}", addr));
   }
 }
 
 void PPU::WriteVRAM(uint16_t addr, uint8_t v) {
-  if (!(addr >= 0 && addr <= 0x3FFF)) {
+  if (addr > 0x3FFF) {
     nes_assert(false, std::format("Unsupported vram write: {:#x}", addr));
   }
 
   if (addr >= 0x2000 && addr <= 0x23FF) {
     vram_[addr - 0x2000] = v;
+  } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+    palettes_[addr - 0x3F00] = v;
   } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 0) {
     if (addr >= 0x2400 && addr <= 0x27FF) {
       vram_[addr - 0x2400] = v;
@@ -581,11 +576,15 @@ void PPU::WriteVRAM(uint16_t addr, uint8_t v) {
       vram_[addr - 0x2400] = v;
     } else if (addr >= 0x2C00 && addr <= 0x2FFF) {
       vram_[addr - 0x2800] = v;
-    } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
-      palettes_[addr - 0x3F00] = v;
     }
   } else if (cartridge_.Flags6.NAMETABLE_ARRANGEMENT == 1) {
-    nes_assert(false, std::format("Unsupported vram write for vertical mirroring: {:#x}", addr));
+    if (addr >= 0x2400 && addr <= 0x27FF) {
+      vram_[addr - 0x2000] = v;
+    } else if (addr >= 0x2800 && addr <= 0x2BFF) {
+      vram_[addr - 0x2800] = v;
+    } else if (addr >= 0x2C00 && addr <= 0x2FFF) {
+      vram_[addr - 0x2800] = v;
+    }
   }
 }
 
