@@ -80,7 +80,10 @@ uint8_t Bus::CpuRead8Bit(uint16_t address) {
     }
   } else if (address >= 0x4020) {
     // Cartridge
-    if (address >= 0x8000) {
+    if (address >= 0x4020 && address <= 0x5FFF) {
+      // TODO(yangsiyu):
+      return 0;
+    } else if (address >= 0x8000) {
       if (cartridge_->mapper == 0) {
         // See https://www.nesdev.org/wiki/NROM
         if (cartridge_->prg_rom.size() == 16384) {

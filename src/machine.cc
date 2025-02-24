@@ -105,6 +105,20 @@ int Machine::Run() {
       joypad_.SetKey(Joypad::kSelect, false);
     }
 
+    if (IsKeyDown(KEY_J)) {
+      joypad_.SetKey(Joypad::kA, true);
+    }
+    if (IsKeyReleased(KEY_J)) {
+      joypad_.SetKey(Joypad::kA, false);
+    }
+
+    if (IsKeyDown(KEY_K)) {
+      joypad_.SetKey(Joypad::kB, true);
+    }
+    if (IsKeyReleased(KEY_K)) {
+      joypad_.SetKey(Joypad::kB, false);
+    }
+
     BeginDrawing();
     ClearBackground(GRAY);
 

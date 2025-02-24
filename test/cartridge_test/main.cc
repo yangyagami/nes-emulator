@@ -6,7 +6,7 @@
 
 int main() {
   nes::Cartridge cart;
-  std::cout << cart.LoadRomFile("nestest.nes") << std::endl;;
+  std::cout << cart.LoadRomFile("ice.nes") << std::endl;;
 
   return 0;
 }

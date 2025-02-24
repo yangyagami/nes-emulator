@@ -87,7 +87,9 @@ uint8_t PPU::Read(uint16_t addr) {
       return ret;
     }
     default: {
-      nes_assert(false, std::format("Unsupported ppu read: {:#x}\n", addr));
+      // nes_assert(false, std::format("Unsupported ppu read: {:#x}\n", addr));
+      std::cout << std::format("Warn: unsupported ppu read: {:#x}\n", addr);
+      return 0;
     }
   }
 }
