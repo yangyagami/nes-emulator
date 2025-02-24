@@ -1,5 +1,6 @@
 #include "machine.h"
 
+#include <chrono>
 #include <iostream>
 
 #include "raylib.h"
@@ -36,33 +37,7 @@ int Machine::Run() {
 
   Texture2D texture = LoadTextureFromImage(image);
 
-  bool debug = false;
-
   while (!WindowShouldClose()) {
-    bool out = false;
-    while (!out) {
-      if (debug) {
-        std::cout << std::format("{:#x} {}\n", cpu_.PC, cpu_.Disassemble(cpu_.PC));
-      }
-
-      cpu_.Tick();
-      int cycles = cpu_.cycles;
-      while (--cpu_.cycles > 0);
-
-      for (int i = 0; i < 3 * cycles; ++i) {
-        ppu_.Tick();
-        if (ppu_.one_frame_finished()) {
-          out = true;
-        }
-      }
-    }
-
-    UpdateTexture(texture, ppu_.pixels().data());
-
-    if (IsKeyPressed(KEY_P)) {
-      debug = !debug;
-    }
-
     if (IsKeyDown(KEY_S)) {
       joypad_.SetKey(Joypad::kDown, true);
     }
@@ -118,6 +93,22 @@ int Machine::Run() {
     if (IsKeyReleased(KEY_K)) {
       joypad_.SetKey(Joypad::kB, false);
     }
+
+    bool out = false;
+    while (!out) {
+      cpu_.Tick();
+      int cycles = cpu_.cycles;
+      while (--cpu_.cycles > 0);
+
+      for (int i = 0; i < 3 * cycles; ++i) {
+        ppu_.Tick();
+        if (ppu_.one_frame_finished()) {
+          out = true;
+        }
+      }
+    }
+
+    UpdateTexture(texture, ppu_.pixels().data());
 
     BeginDrawing();
     ClearBackground(GRAY);
