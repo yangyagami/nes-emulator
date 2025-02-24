@@ -43,7 +43,11 @@ void Bus::CpuWrite8Bit(uint16_t address, uint8_t value) {
     }
   } else if (address >= 0x4020) {
     // Cartridge
-    nes_assert(false, std::format("Unsupported write: {:#x}", address));
+    if (address >= 0x6000 && address <= 0x7FFF) {
+      cartridge_->prg_ram[address - 0x6000] = value;
+    } else {
+      nes_assert(false, std::format("Unsupported write: {:#x}", address));
+    }
   } else {
     if (address >= memory_->size()) {
       nes_assert(false, std::format("Write out of memory: {:#x}", address));
@@ -83,6 +87,8 @@ uint8_t Bus::CpuRead8Bit(uint16_t address) {
     if (address >= 0x4020 && address <= 0x5FFF) {
       // TODO(yangsiyu):
       return 0;
+    } else if (address >= 0x6000 && address <= 0x7FFF) {
+      return cartridge_->prg_ram[address - 0x6000];
     } else if (address >= 0x8000) {
       if (cartridge_->mapper == 0) {
         // See https://www.nesdev.org/wiki/NROM

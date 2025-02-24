@@ -59,6 +59,14 @@ bool Cartridge::LoadRomFile(const std::string &path) {
             content.begin() + offset + 8192 * chr_rom_size,
             chr_rom.begin());
 
+  if (Flags7.NES2_0 == 2) {
+    int chunk = 1;
+    if (Flags8 != 0) {
+      chunk = Flags8;
+    }
+    prg_ram.resize(chunk * 8192);
+  }
+
   return true;
 }
 
